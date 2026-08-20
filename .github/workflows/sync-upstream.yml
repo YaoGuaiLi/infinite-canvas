@@ -1,0 +1,36 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: "0 * * * *" # 每小时检查一次上游更新
+  workflow_dispatch: # 也可手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge upstream main
+        run: |
+          git remote add upstream https://github.com/basketikun/infinite-canvas.git
+          git fetch upstream main
+          UPSTREAM=$(git rev-parse upstream/main)
+          LOCAL=$(git rev-parse HEAD)
+          if [ "$UPSTREAM" = "$LOCAL" ]; then
+            echo "Already up to date"
+            exit 0
+          fi
+          if git merge upstream/main --no-edit 2>/dev/null; then
+            echo "Merge OK, pushing"
+            git push origin main
+          else
+            echo "Merge conflict — resolve manually in fork"
+            git merge --abort
+            exit 1
+          fi
