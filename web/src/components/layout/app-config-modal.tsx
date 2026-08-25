@@ -10,10 +10,11 @@ import { ConfigPromptSources } from "@/components/layout/config-prompt-sources";
 import { ConfigLocalStorage } from "@/components/layout/config-local-storage";
 import type { AppLocale } from "@/i18n";
 import { exportAppConfig, importAppConfig } from "@/services/config-file";
-import { syncAppDataToWebdav, type AppSyncDomainKey, type AppSyncProgressEvent } from "@/services/app-sync";
+import { createGithubTransport, createWebdavTransport, syncAppDataToCloud, type AppSyncDomainKey, type AppSyncProgressEvent } from "@/services/app-sync";
+import { testGithubConnection } from "@/services/github-sync";
 import { testWebdavConnection, WEBDAV_MANIFEST_FILE_NAME } from "@/services/webdav-sync";
 import { audioFormatOptions, audioVoiceOptions, normalizeAudioSpeedValue } from "@/lib/audio-generation";
-import { createModelChannel, modelOptionsFromChannels, normalizeModelOptionValue, selectableModelsByCapability, useConfigStore, type AiConfig, type ApiCallFormat, type ConfigTabKey, type ModelCapability, type ModelChannel } from "@/stores/use-config-store";
+import { createModelChannel, modelOptionsFromChannels, normalizeModelOptionValue, selectableModelsByCapability, useConfigStore, type AiConfig, type ApiCallFormat, type ConfigTabKey, type ModelCapability, type ModelChannel, type SyncProvider } from "@/stores/use-config-store";
 
 type ModelGroup = {
     capability: ModelCapability;
@@ -58,12 +59,19 @@ export function AppConfigPanel({ showDoneButton = false, initialTab = "channels"
     const [webdavDomainProgress, setWebdavDomainProgress] = useState(createWebdavDomainProgress);
     const config = useConfigStore((state) => state.config);
     const webdav = useConfigStore((state) => state.webdav);
+    const github = useConfigStore((state) => state.github);
+    const syncProvider = useConfigStore((state) => state.syncProvider);
     const updateConfig = useConfigStore((state) => state.updateConfig);
     const updateWebdavConfig = useConfigStore((state) => state.updateWebdavConfig);
+    const updateGithubConfig = useConfigStore((state) => state.updateGithubConfig);
+    const updateSyncProvider = useConfigStore((state) => state.updateSyncProvider);
     const shouldPromptContinue = useConfigStore((state) => state.shouldPromptContinue);
     const setConfigDialogOpen = useConfigStore((state) => state.setConfigDialogOpen);
     const clearPromptContinue = useConfigStore((state) => state.clearPromptContinue);
     const webdavReady = Boolean(webdav.url.trim());
+    const githubReady = Boolean(github.repo.trim() && github.pat.trim());
+    const syncReady = syncProvider === "github" ? githubReady : webdavReady;
+    const lastSyncedAt = syncProvider === "github" ? github.lastSyncedAt : webdav.lastSyncedAt;
     const editingChannel = config.channels.find((channel) => channel.id === editingChannelId) || null;
     const locale = i18n.resolvedLanguage as AppLocale;
     useEffect(() => setActiveTab(initialTab), [initialTab]);
@@ -111,14 +119,15 @@ export function AppConfigPanel({ showDoneButton = false, initialTab = "channels"
         updateChannels(config.channels.map((item) => (item.id === channel.id ? channel : item)));
     };
 
-    const testWebdav = async () => {
-        if (!webdavReady) {
-            message.error(t("config.webdav.missingUrl"));
+    const testConnection = async () => {
+        if (!syncReady) {
+            message.error(t(syncProvider === "github" ? "config.github.missingConfig" : "config.webdav.missingUrl"));
             return;
         }
         setTestingWebdav(true);
         try {
-            await testWebdavConnection(webdav);
+            if (syncProvider === "github") await testGithubConnection(github);
+            else await testWebdavConnection(webdav);
             message.success(t("config.webdav.available"));
         } catch (error) {
             message.error(error instanceof Error ? error.message : t("config.webdav.testFailed"));
@@ -141,17 +150,19 @@ export function AppConfigPanel({ showDoneButton = false, initialTab = "channels"
         }));
     };
 
-    const syncWebdav = async () => {
-        if (!webdavReady) {
-            message.error(t("config.webdav.missingUrl"));
+    const syncNow = async () => {
+        if (!syncReady) {
+            message.error(t(syncProvider === "github" ? "config.github.missingConfig" : "config.webdav.missingUrl"));
             return;
         }
         setSyncingWebdav(true);
         setWebdavDomainProgress(createWebdavDomainProgress());
         setWebdavSyncStatus(t("config.webdav.preparing"));
         try {
-            const result = await syncAppDataToWebdav(webdav, updateWebdavProgress);
-            updateWebdavConfig("lastSyncedAt", result.syncedAt);
+            const transport = syncProvider === "github" ? createGithubTransport(github) : createWebdavTransport(webdav);
+            const result = await syncAppDataToCloud(transport, updateWebdavProgress);
+            if (syncProvider === "github") updateGithubConfig("lastSyncedAt", result.syncedAt);
+            else updateWebdavConfig("lastSyncedAt", result.syncedAt);
             message.success(t("config.webdav.completed", { projects: result.projects, assets: result.assets, records: result.imageLogs + result.videoLogs, files: result.uploadedFiles, bytes: formatBytes(result.uploadedBytes) }));
         } catch (error) {
             setWebdavSyncStatus(error instanceof Error ? error.message : t("config.webdav.failed"));
@@ -270,7 +281,7 @@ export function AppConfigPanel({ showDoneButton = false, initialTab = "channels"
                     },
                     {
                         key: "webdav",
-                        label: "WebDAV",
+                        label: t("config.tabs.sync"),
                         children: (
                             <Form layout="vertical" requiredMark={false}>
                                 <section className="rounded-lg border border-stone-200 p-3 dark:border-stone-800">
@@ -282,27 +293,54 @@ export function AppConfigPanel({ showDoneButton = false, initialTab = "channels"
                                             </div>
                                             <div className="mt-1 text-xs text-stone-500">{t("config.webdav.description")}</div>
                                         </div>
-                                        <div className="text-xs text-stone-500">{webdav.lastSyncedAt ? t("config.webdav.lastSynced", { time: formatWebdavTime(webdav.lastSyncedAt, locale) }) : t("config.webdav.neverSynced")}</div>
+                                        <Select
+                                            size="small"
+                                            value={syncProvider}
+                                            onChange={(value) => updateSyncProvider(value as SyncProvider)}
+                                            options={[
+                                                { value: "webdav", label: t("config.providers.webdav") },
+                                                { value: "github", label: t("config.providers.github") },
+                                            ]}
+                                            className="min-w-32"
+                                        />
                                     </div>
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <Form.Item label={t("config.webdav.url")} className="mb-4">
-                                            <Input value={webdav.url} placeholder="https://nas.example.com/webdav" onChange={(event) => updateWebdavConfig("url", event.target.value)} />
-                                        </Form.Item>
-                                        <Form.Item label={t("config.webdav.directory")} extra={t("config.webdav.directoryDescription", { manifest: WEBDAV_MANIFEST_FILE_NAME })} className="mb-4">
-                                            <Input value={webdav.directory} placeholder="infinite-canvas" onChange={(event) => updateWebdavConfig("directory", event.target.value)} />
-                                        </Form.Item>
-                                        <Form.Item label={t("config.webdav.username")} className="mb-0">
-                                            <Input value={webdav.username} autoComplete="username" onChange={(event) => updateWebdavConfig("username", event.target.value)} />
-                                        </Form.Item>
-                                        <Form.Item label={t("config.webdav.password")} className="mb-0">
-                                            <Input.Password value={webdav.password} autoComplete="current-password" onChange={(event) => updateWebdavConfig("password", event.target.value)} />
-                                        </Form.Item>
-                                    </div>
-                                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                                        <Button icon={<Wifi className="size-4" />} disabled={!webdavReady || syncingWebdav} loading={testingWebdav} onClick={() => void testWebdav()}>
+                                    {syncProvider === "github" ? (
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <Form.Item label={t("config.github.baseUrl")} extra={t("config.github.baseUrlDescription")} className="mb-4">
+                                                <Input value={github.baseUrl} placeholder="https://api.github.com" onChange={(event) => updateGithubConfig("baseUrl", event.target.value)} />
+                                            </Form.Item>
+                                            <Form.Item label={t("config.github.repo")} className="mb-4">
+                                                <Input value={github.repo} placeholder="your-name/infinite-canvas-backup" onChange={(event) => updateGithubConfig("repo", event.target.value)} />
+                                            </Form.Item>
+                                            <Form.Item label={t("config.github.pat")} extra={t("config.github.patDescription")} className="mb-0">
+                                                <Input.Password value={github.pat} autoComplete="current-password" placeholder="github_pat_..." onChange={(event) => updateGithubConfig("pat", event.target.value)} />
+                                            </Form.Item>
+                                            <Form.Item label={t("config.github.directory")} extra={t("config.github.directoryDescription", { manifest: WEBDAV_MANIFEST_FILE_NAME })} className="mb-0">
+                                                <Input value={github.directory} placeholder="infinite-canvas" onChange={(event) => updateGithubConfig("directory", event.target.value)} />
+                                            </Form.Item>
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <Form.Item label={t("config.webdav.url")} className="mb-4">
+                                                <Input value={webdav.url} placeholder="https://nas.example.com/webdav" onChange={(event) => updateWebdavConfig("url", event.target.value)} />
+                                            </Form.Item>
+                                            <Form.Item label={t("config.webdav.directory")} extra={t("config.webdav.directoryDescription", { manifest: WEBDAV_MANIFEST_FILE_NAME })} className="mb-4">
+                                                <Input value={webdav.directory} placeholder="infinite-canvas" onChange={(event) => updateWebdavConfig("directory", event.target.value)} />
+                                            </Form.Item>
+                                            <Form.Item label={t("config.webdav.username")} className="mb-0">
+                                                <Input value={webdav.username} autoComplete="username" onChange={(event) => updateWebdavConfig("username", event.target.value)} />
+                                            </Form.Item>
+                                            <Form.Item label={t("config.webdav.password")} className="mb-0">
+                                                <Input.Password value={webdav.password} autoComplete="current-password" onChange={(event) => updateWebdavConfig("password", event.target.value)} />
+                                            </Form.Item>
+                                        </div>
+                                    )}
+                                    <div className="mt-3 text-right text-xs text-stone-500">{lastSyncedAt ? t("config.webdav.lastSynced", { time: formatWebdavTime(lastSyncedAt, locale) }) : t("config.webdav.neverSynced")}</div>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <Button icon={<Wifi className="size-4" />} disabled={!syncReady || syncingWebdav} loading={testingWebdav} onClick={() => void testConnection()}>
                                             {t("config.webdav.test")}
                                         </Button>
-                                        <Button type="primary" icon={<RefreshCw className="size-4" />} disabled={!webdavReady || testingWebdav} loading={syncingWebdav} onClick={() => void syncWebdav()}>
+                                        <Button type="primary" icon={<RefreshCw className="size-4" />} disabled={!syncReady || testingWebdav} loading={syncingWebdav} onClick={() => void syncNow()}>
                                             {t(syncingWebdav ? "config.webdav.syncing" : "config.webdav.syncNow")}
                                         </Button>
                                         {webdavSyncStatus ? <span className="text-xs text-stone-500">{syncStageLabel(webdavSyncStatus, t)}</span> : null}

@@ -365,6 +365,7 @@ export default {
             preferences: "Preferences",
             promptSources: "Prompt sources",
             localStorage: "Local storage",
+            sync: "Cloud Sync",
         },
         localStorage: {
             title: "IndexedDB storage usage",
@@ -525,6 +526,23 @@ export default {
             variables: "Available variables",
             insert: "Click to insert",
             placeholder: "// Leave empty to use the default request; insert a template to view an example.",
+        },
+        providers: {
+            webdav: "WebDAV",
+            github: "GitHub repository",
+        },
+        github: {
+            title: "GitHub repository sync",
+            description: "Sync canvases, assets, generation history, and local media files to your private GitHub repository. If GitHub API is unreachable in your region, point the API URL to your own reverse proxy.",
+            baseUrl: "API URL",
+            baseUrlDescription: "Defaults to the official endpoint; a self-hosted reverse proxy (e.g. an EdgeOne edge function) works too",
+            repo: "Repository (owner/repo)",
+            pat: "Access token (Fine-grained PAT)",
+            patDescription: "Only needs Contents read/write on the target repository",
+            directory: "Remote directory",
+            directoryDescription: "Business directories are created here, each containing {{manifest}} and files/",
+            missingConfig: "Enter the repository and access token first",
+            errors: { testFailed: "GitHub connection test failed", downloadFailed: "Failed to read the GitHub sync file", downloadTimeout: "Timed out while reading the GitHub sync file", emptyUpload: "The upload file is empty; upload canceled", uploadFailed: "Failed to upload the GitHub sync file", requestTimeout: "The GitHub request timed out. Check the network or reverse proxy.", connectionFailed: "Could not connect to the GitHub API. Check the API URL, HTTPS certificate, CORS, and network.", repoRequired: "Enter a repository name first", invalidRepo: "Repository should be in owner/repo format", patRequired: "Enter an access token first", authenticationFailed: "GitHub authentication failed. Check that the token is valid and has Contents access to the target repository.", pathMissing: "The GitHub path does not exist. Check the repository name and remote directory.", responseFailed: "{{fallback}}: {{status}}{{detail}}", syncFailed: "Sync failed" },
         },
         webdav: {
             title: "WebDAV sync",

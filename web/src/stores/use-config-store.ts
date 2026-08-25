@@ -60,6 +60,15 @@ export type WebdavSyncConfig = {
     directory: string;
     lastSyncedAt: string;
 };
+
+export type GithubSyncConfig = {
+    baseUrl: string;
+    repo: string;
+    pat: string;
+    directory: string;
+    lastSyncedAt: string;
+};
+export type SyncProvider = "webdav" | "github";
 export type ConfigTabKey = "channels" | "preferences" | "prompt-sources" | "webdav" | "local-storage";
 
 export const CONFIG_STORE_KEY = "infinite-canvas:ai_config_store";
@@ -118,14 +127,26 @@ export const defaultWebdavSyncConfig: WebdavSyncConfig = {
     lastSyncedAt: "",
 };
 
+export const defaultGithubSyncConfig: GithubSyncConfig = {
+    baseUrl: "https://api.github.com",
+    repo: "",
+    pat: "",
+    directory: "infinite-canvas",
+    lastSyncedAt: "",
+};
+
 type ConfigStore = {
     config: AiConfig;
     webdav: WebdavSyncConfig;
+    github: GithubSyncConfig;
+    syncProvider: SyncProvider;
     isConfigOpen: boolean;
     configTab: ConfigTabKey;
     shouldPromptContinue: boolean;
     updateConfig: <K extends keyof AiConfig>(key: K, value: AiConfig[K]) => void;
     updateWebdavConfig: <K extends keyof WebdavSyncConfig>(key: K, value: WebdavSyncConfig[K]) => void;
+    updateGithubConfig: <K extends keyof GithubSyncConfig>(key: K, value: GithubSyncConfig[K]) => void;
+    updateSyncProvider: (provider: SyncProvider) => void;
     isAiConfigReady: (config: AiConfig, model: string) => boolean;
     openConfigDialog: (shouldPromptContinue?: boolean, tab?: ConfigTabKey) => void;
     setConfigDialogOpen: (isOpen: boolean) => void;
@@ -194,6 +215,8 @@ export const useConfigStore = create<ConfigStore>()(
         (set, get) => ({
             config: defaultConfig,
             webdav: defaultWebdavSyncConfig,
+            github: defaultGithubSyncConfig,
+            syncProvider: "webdav",
             isConfigOpen: false,
             configTab: "channels",
             shouldPromptContinue: false,
@@ -211,6 +234,14 @@ export const useConfigStore = create<ConfigStore>()(
                         [key]: value,
                     },
                 })),
+            updateGithubConfig: (key, value) =>
+                set((state) => ({
+                    github: {
+                        ...state.github,
+                        [key]: value,
+                    },
+                })),
+            updateSyncProvider: (syncProvider) => set({ syncProvider }),
             isAiConfigReady: (config, model) => isAiConfigReady(config, model),
             openConfigDialog: (shouldPromptContinue = false, configTab = "channels") => set({ isConfigOpen: true, shouldPromptContinue, configTab }),
             setConfigDialogOpen: (isConfigOpen) => set({ isConfigOpen }),
@@ -218,11 +249,12 @@ export const useConfigStore = create<ConfigStore>()(
         }),
         {
             name: CONFIG_STORE_KEY,
-            partialize: (state) => ({ config: state.config, webdav: state.webdav }),
+            partialize: (state) => ({ config: state.config, webdav: state.webdav, github: state.github, syncProvider: state.syncProvider }),
             merge: (persisted, current) => {
                 const persistedState = (persisted || {}) as Partial<ConfigStore>;
                 const persistedConfig = (persistedState.config || {}) as Partial<AiConfig>;
                 const persistedWebdav = (persistedState.webdav || {}) as Partial<WebdavSyncConfig>;
+                const persistedGithub = (persistedState.github || {}) as Partial<GithubSyncConfig>;
                 const config = { ...defaultConfig, ...persistedConfig };
                 if (!Array.isArray(persistedConfig.channels)) config.channels = [];
                 const channels = normalizeChannels(config);
@@ -230,6 +262,8 @@ export const useConfigStore = create<ConfigStore>()(
                 return {
                     ...current,
                     webdav: { ...defaultWebdavSyncConfig, ...persistedWebdav },
+                    github: { ...defaultGithubSyncConfig, ...persistedGithub },
+                    syncProvider: persistedState.syncProvider === "github" ? "github" : "webdav",
                     config: {
                         ...config,
                         channelMode: "local",

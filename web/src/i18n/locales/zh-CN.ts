@@ -365,6 +365,7 @@ export default {
             preferences: "偏好设置",
             promptSources: "提示词来源",
             localStorage: "本地存储",
+            sync: "云同步",
         },
         localStorage: {
             title: "IndexedDB 存储使用情况",
@@ -525,6 +526,23 @@ export default {
             variables: "可用变量",
             insert: "点击插入",
             placeholder: "// 留空使用系统默认调用；点击右下角「插入模板」查看示例。",
+        },
+        providers: {
+            webdav: "WebDAV",
+            github: "GitHub 仓库",
+        },
+        github: {
+            title: "GitHub 仓库同步",
+            description: "同步画布、我的资产、生成记录和本地媒体文件到你的 GitHub 私有仓库；国内网络不稳定时可将 API 地址换成自有反代。",
+            baseUrl: "API 地址",
+            baseUrlDescription: "默认官方地址，可填自建反代（如 EdgeOne 边缘函数）",
+            repo: "仓库（owner/repo）",
+            pat: "访问令牌 (Fine-grained PAT)",
+            patDescription: "仅需目标仓库的 Contents 读写权限",
+            directory: "远程目录",
+            directoryDescription: "会在该目录下分业务目录保存，每个目录包含 {{manifest}} 和 files/",
+            missingConfig: "请先填写仓库和访问令牌",
+            errors: { testFailed: "GitHub 连接测试失败", downloadFailed: "读取 GitHub 同步文件失败", downloadTimeout: "读取 GitHub 同步文件超时", emptyUpload: "上传文件为空，已取消上传", uploadFailed: "上传 GitHub 同步文件失败", requestTimeout: "GitHub 请求超时，请检查网络或反代状态", connectionFailed: "无法连接 GitHub API，请检查 API 地址、HTTPS 证书、CORS 或网络状态", repoRequired: "请先填写仓库名称", invalidRepo: "仓库格式应为 owner/repo", patRequired: "请先填写访问令牌", authenticationFailed: "GitHub 认证失败，请检查令牌是否有效以及是否授予了目标仓库的 Contents 权限", pathMissing: "GitHub 路径不存在，请检查仓库名称和远程目录", responseFailed: "{{fallback}}：{{status}}{{detail}}", syncFailed: "同步失败" },
         },
         webdav: {
             title: "WebDAV 同步",
