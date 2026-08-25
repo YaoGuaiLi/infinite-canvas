@@ -5,6 +5,10 @@ on:
     - cron: "0 * * * *" # 每小时检查一次上游更新
   workflow_dispatch: # 也可手动触发
 
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -18,6 +22,9 @@ jobs:
 
       - name: Merge upstream main
         run: |
+          # merge commit 需要 git 身份，runner 默认没有配置，必须先设置
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add upstream https://github.com/basketikun/infinite-canvas.git
           git fetch upstream main
           UPSTREAM=$(git rev-parse upstream/main)
@@ -26,11 +33,11 @@ jobs:
             echo "Already up to date"
             exit 0
           fi
-          if git merge upstream/main --no-edit 2>/dev/null; then
+          if git merge --no-edit upstream/main; then
             echo "Merge OK, pushing"
             git push origin main
           else
             echo "Merge conflict — resolve manually in fork"
-            git merge --abort
+            git merge --abort || true
             exit 1
           fi
