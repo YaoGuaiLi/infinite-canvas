@@ -73,6 +73,13 @@
 
 如果你在为担心没有合适的生图API来发愁，可以查看该免费生图项目：[chatgpt2api](https://github.com/basketikun/chatgpt2api)
 
+## Fork 增强功能
+
+本仓库（[YaoGuaiLi/infinite-canvas](https://github.com/YaoGuaiLi/infinite-canvas)）在 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 上游基础上新增：
+
+- **GitHub 仓库备份**：新增「云同步」渠道下拉，可用 GitHub 私有仓库（Contents API）同步画布、我的资产、生成记录和本地媒体文件。在配置弹窗 → 云同步中选择 **GitHub 仓库**，填入 `owner/repo` 和仅授予目标仓库 `Contents: Read and write` 的 Fine-grained PAT 即可；国内网络不稳时可将 API 地址换为自有反代。
+- **APIMart 渠道**：渠道编辑器新增 **APIMart** 调用格式（默认 `https://api.apimart.ai/v1`），内置任务式生图 / 生视频适配：参考图自动上传、任务轮询、按模型的尺寸 / 分辨率 / 比例 / 质量参数归一化（gemini-3.1、nano-banana、seedream-5、grok-imagine、imagen-4、flux 等），浏览器直连无需反代。
+
 ## 快速开始
 
 AI API Key、Base URL、画布、素材和生成记录默认保存在浏览器本地。

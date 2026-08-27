@@ -7,6 +7,7 @@ import { nanoid } from "nanoid";
 import { dataUrlToFile } from "@/lib/image-utils";
 import { buildImageReferencePromptText } from "@/lib/image-reference-prompt";
 import { imageToDataUrl } from "@/services/image-storage";
+import { requestApimartImages } from "@/services/api/apimart";
 import type { ReferenceImage } from "@/types/image";
 
 const apiText = (key: string, options?: Record<string, unknown>) => i18n.t(`apiErrors.${key}`, options);
@@ -743,6 +744,23 @@ export async function requestGeneration(config: AiConfig, prompt: string, option
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
     }
+    if (requestConfig.apiFormat === "apimart") {
+        const aQuality = normalizeQuality(config.quality);
+        try {
+            return await requestApimartImages(requestConfig, {
+                model: requestConfig.model,
+                prompt: withSystemPrompt(requestConfig, prompt),
+                n,
+                size: resolveRequestSize(aQuality, config.size),
+                quality: aQuality,
+                background: normalizeBackground(config.background),
+                references: [],
+                isEdit: false,
+            });
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("requestFailed")));
+        }
+    }
     const quality = normalizeQuality(config.quality);
     const requestSize = resolveRequestSize(quality, config.size);
     const background = normalizeBackground(config.background);
@@ -801,6 +819,25 @@ export async function requestEdit(config: AiConfig, prompt: string, references: 
         if (mask) throw new Error(apiText("geminiMaskUnsupported"));
         try {
             return await requestGeminiImages(requestConfig, requestPrompt, references, n, options);
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("requestFailed")));
+        }
+    }
+    if (requestConfig.apiFormat === "apimart") {
+        if (mask) throw new Error(apiText("apimartMaskUnsupported"));
+        const aQuality = normalizeQuality(config.quality);
+        try {
+            const refs = await Promise.all(references.map((image) => imageToDataUrl(image).catch(() => ""))).then((urls) => urls.filter(Boolean));
+            return await requestApimartImages(requestConfig, {
+                model: requestConfig.model,
+                prompt: withSystemPrompt(requestConfig, requestPrompt),
+                n,
+                size: resolveRequestSize(aQuality, config.size),
+                quality: aQuality,
+                background: normalizeBackground(config.background),
+                references: refs,
+                isEdit: true,
+            });
         } catch (error) {
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }

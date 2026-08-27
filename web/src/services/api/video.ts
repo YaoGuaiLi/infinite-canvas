@@ -6,6 +6,7 @@ import { dataUrlToFile } from "@/lib/image-utils";
 import { uploadMediaFile, type UploadedFile } from "@/services/file-storage";
 import { imageToDataUrl } from "@/services/image-storage";
 import { boolConfig, buildApiUrl, modelOptionName, resolveModelRequestConfig, resolveModelScript, type AiConfig } from "@/stores/use-config-store";
+import { createApimartVideoTask, pollApimartVideoTask } from "@/services/api/apimart";
 import { runModelPlugin } from "./model-plugin";
 import type { ReferenceImage } from "@/types/image";
 
@@ -16,7 +17,7 @@ type RequestOptions = { signal?: AbortSignal };
 const apiText = (key: string, options?: Record<string, unknown>) => i18n.t(`apiErrors.${key}`, options);
 
 export type VideoGenerationResult = { blob?: Blob; url?: string; mimeType?: string };
-export type VideoGenerationTask = { id: string; provider: "openai" | "plugin"; model: string };
+export type VideoGenerationTask = { id: string; provider: "openai" | "plugin" | "apimart"; model: string };
 export type VideoGenerationTaskState = { status: "pending" } | { status: "completed"; result: VideoGenerationResult } | { status: "failed"; error: string };
 
 /** Results for scripted (plugin) video models, which run their own create+poll in one shot at task creation. */
@@ -51,6 +52,7 @@ export async function createVideoGenerationTask(config: AiConfig, prompt: string
     const requestConfig = resolveModelRequestConfig(config, selectedModel);
     const script = resolveModelScript(config, selectedModel);
     if (script) return createPluginVideoTask(requestConfig, selectedModel, script, prompt, references, options);
+    if (requestConfig.apiFormat === "apimart") return createApimartVideoGenerationTask(requestConfig, selectedModel, prompt, references, options);
     assertVideoConfig(requestConfig, requestConfig.model);
     return createOpenAIVideoTask(requestConfig, selectedModel, prompt, references, options);
 }
@@ -61,8 +63,36 @@ export async function pollVideoGenerationTask(config: AiConfig, task: VideoGener
         return result ? { status: "completed", result } : { status: "failed", error: apiText("pluginVideoExpired") };
     }
     const requestConfig = resolveModelRequestConfig(config, task.model);
+    if (task.provider === "apimart") return pollApimartVideoGenerationTask(requestConfig, task.id, options);
     assertVideoConfig(requestConfig, requestConfig.model);
     return pollOpenAIVideoTask(requestConfig, task, options);
+}
+
+async function createApimartVideoGenerationTask(config: AiConfig, model: string, prompt: string, references: ReferenceImage[], options?: RequestOptions): Promise<VideoGenerationTask> {
+    const taskId = await createApimartVideoTask(config, modelOptionName(model), prompt, {
+        seconds: Math.max(1, Math.min(20, Math.floor(Number(config.videoSeconds) || 6))),
+        size: normalizeVideoSize(config.size) || undefined,
+        resolution: normalizeVideoResolution(config.vquality),
+        generateAudio: boolConfig(config.videoGenerateAudio, true),
+        references,
+    });
+    if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    return { id: taskId, provider: "apimart", model };
+}
+
+async function pollApimartVideoGenerationTask(config: AiConfig, taskId: string, options?: RequestOptions): Promise<VideoGenerationTaskState> {
+    const state = await pollApimartVideoTask(config, taskId, options?.signal);
+    if (state.status === "failed") return { status: "failed", error: state.error || apiText("videoGenerationFailed") };
+    if (state.status === "completed" && state.url) {
+        try {
+            const result = await videoResultFromUrl(state.url, options);
+            return { status: "completed", result };
+        } catch (error) {
+            if (axios.isCancel(error) || options?.signal?.aborted) throw error;
+            return { status: "completed", result: { url: state.url, mimeType: "video/mp4" } };
+        }
+    }
+    return { status: "pending" };
 }
 
 async function createPluginVideoTask(config: AiConfig, model: string, script: string, prompt: string, references: ReferenceImage[], options?: RequestOptions): Promise<VideoGenerationTask> {
