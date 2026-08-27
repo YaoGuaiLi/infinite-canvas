@@ -26,25 +26,22 @@ export async function uploadGithubFile(config: GithubSyncConfig, path: string, f
     if (!file.size) throw new Error(githubText("emptyUpload"));
     assertGithubConfig(config);
     void contentType;
-    const body = JSON.stringify({ message: commitMessage(path), content: await blobToBase64(file), ...(await fetchFileSha(config, path)) });
-    const response = await githubFetch(config, path, {
-        method: "PUT",
-        headers: { Accept: "application/vnd.github+json", "Content-Type": "application/json" },
-        body,
-    });
-    if (response.status === 409 || response.status === 422) {
-        // 并发同步导致 sha 过期：取最新 sha 重试一次
-        const retryBody = JSON.stringify({ message: commitMessage(path), content: await blobToBase64(file), ...(await fetchFileSha(config, path)) });
-        const retry = await githubFetch(config, path, {
+    const content = await blobToBase64(file);
+    let lastResponse: Response | undefined;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+        const body = JSON.stringify({ message: commitMessage(path), content, ...(await fetchFileSha(config, path)) });
+        const response = await githubFetch(config, path, {
             method: "PUT",
             headers: { Accept: "application/vnd.github+json", "Content-Type": "application/json" },
-            body: retryBody,
+            body,
         });
-        if (retry.ok) return;
-        await throwGithubError(retry, githubText("uploadFailed"));
-        return;
+        if (response.ok) return;
+        lastResponse = response;
+        // 409/422：同一时刻有另一个同步抢先改了同一文件（如双开页面或两台设备同时同步），取最新 sha 重试
+        if (response.status !== 409 && response.status !== 422) break;
+        await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
     }
-    if (!response.ok) await throwGithubError(response, githubText("uploadFailed"));
+    await throwGithubError(lastResponse!, githubText("uploadFailed"));
 }
 
 async function fetchFileSha(config: GithubSyncConfig, path: string): Promise<{ sha: string } | Record<string, never>> {
