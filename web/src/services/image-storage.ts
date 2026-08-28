@@ -74,6 +74,16 @@ async function fetchImageBlob(url: string, options?: ImageReadOptions) {
     } catch (error) {
         if (timedOut) throw namedError(IMAGE_TIMEOUT_ERROR);
         if (options?.signal?.aborted) throw abortReason(options.signal);
+        // 远程图床可能不带 CORS 头（如 APIMart 图床），直连 fetch 会被浏览器拦截；
+        // 回退到同源代理（Vercel Edge Function，/api/image-proxy）获取图片字节。
+        if (/^https?:\/\//i.test(url)) {
+            try {
+                const proxyResponse = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`, { signal: controller.signal });
+                if (proxyResponse.ok) return await proxyResponse.blob();
+            } catch {
+                // 代理不可用（如未部署函数）时保留原始错误
+            }
+        }
         throw error;
     } finally {
         window.clearTimeout(timer);
