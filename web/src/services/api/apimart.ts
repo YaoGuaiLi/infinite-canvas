@@ -713,8 +713,8 @@ async function uploadReferenceImage(baseUrl: string, apiKey: string, dataUrl: st
     const response = await apimartFetch(baseUrl, "/uploads/images", {
         method: "POST",
         headers: {
+            // 不要手动设置 Content-Type：FormData 需要浏览器自动生成带 boundary 的值
             Authorization: `Bearer ${apiKey}`,
-            ...(file.type ? { "Content-Type": "multipart/form-data" } : {}),
         },
         body: form,
     });
