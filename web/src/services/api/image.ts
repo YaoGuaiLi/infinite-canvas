@@ -827,7 +827,6 @@ export async function requestEdit(config: AiConfig, prompt: string, references: 
         if (mask) throw new Error(apiText("apimartMaskUnsupported"));
         const aQuality = normalizeQuality(config.quality);
         try {
-            const refs = await Promise.all(references.map((image) => imageToDataUrl(image).catch(() => ""))).then((urls) => urls.filter(Boolean));
             return await requestApimartImages(requestConfig, {
                 model: requestConfig.model,
                 prompt: withSystemPrompt(requestConfig, requestPrompt),
@@ -835,7 +834,7 @@ export async function requestEdit(config: AiConfig, prompt: string, references: 
                 size: resolveRequestSize(aQuality, config.size),
                 quality: aQuality,
                 background: normalizeBackground(config.background),
-                references: refs,
+                references,
                 isEdit: true,
             });
         } catch (error) {

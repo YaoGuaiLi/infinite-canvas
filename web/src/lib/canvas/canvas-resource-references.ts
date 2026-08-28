@@ -32,7 +32,22 @@ export async function resolveCanvasReferenceImages(references: CanvasResourceRef
         const node = nodesById.get(reference.nodeId);
         if (!node) throw new Error(i18n.t("agent.composer.mentions.resourceMissing", { title: reference.title }));
         const metadata = node.metadata;
-        const dataUrl = await imageToDataUrl({ storageKey: metadata?.storageKey, url: reference.previewUrl });
+        const previewUrl = reference.previewUrl || "";
+        // 远程图床可能不带 CORS 头（如 APIMart 图床），浏览器 fetch 会被拦截。
+        // 直接透传原始 URL，由 <img> 展示；APIMart 等任务型渠道也能直接引用。
+        if (/^https?:\/\//i.test(previewUrl)) {
+            return {
+                id: `canvas:${node.id}`,
+                name: reference.title,
+                type: metadata?.mimeType || "image/png",
+                size: metadata?.bytes || 0,
+                width: metadata?.naturalWidth || 0,
+                height: metadata?.naturalHeight || 0,
+                url: previewUrl,
+                dataUrl: previewUrl,
+            };
+        }
+        const dataUrl = await imageToDataUrl({ storageKey: metadata?.storageKey, url: previewUrl });
         if (!dataUrl.startsWith("data:image/")) throw new Error(i18n.t("agent.composer.mentions.imageReadFailed", { title: reference.title }));
         const meta = metadata?.naturalWidth && metadata.naturalHeight
             ? { width: metadata.naturalWidth, height: metadata.naturalHeight, mimeType: metadata.mimeType || dataUrl.match(/^data:([^;]+)/)?.[1] || "image/png" }
@@ -44,7 +59,7 @@ export async function resolveCanvasReferenceImages(references: CanvasResourceRef
             size: metadata?.bytes || getDataUrlByteSize(dataUrl),
             width: meta.width,
             height: meta.height,
-            url: reference.previewUrl || dataUrl,
+            url: previewUrl || dataUrl,
             dataUrl,
         };
     }));

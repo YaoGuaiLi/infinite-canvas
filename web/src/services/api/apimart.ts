@@ -728,10 +728,10 @@ async function uploadReferenceImage(baseUrl: string, apiKey: string, dataUrl: st
     return url;
 }
 
-async function normalizeReferenceUrls(baseUrl: string, apiKey: string, references: string[]): Promise<string[]> {
+async function normalizeReferenceUrls(baseUrl: string, apiKey: string, references: ReferenceImage[]): Promise<string[]> {
     const urls: string[] = [];
-    for (const value of references) {
-        const dataUrl = value?.trim();
+    for (const image of references) {
+        const dataUrl = image.dataUrl?.trim() || (await imageToDataUrl(image).catch(() => "")).trim();
         if (!dataUrl) continue;
         if (/^https?:\/\//i.test(dataUrl)) {
             urls.push(dataUrl);
@@ -950,7 +950,7 @@ export type ApimartImageInput = {
     size?: string;
     quality?: string;
     background?: string;
-    references: string[];
+    references: ReferenceImage[];
     isEdit: boolean;
     mask?: ReferenceImage;
 };
@@ -1052,7 +1052,14 @@ export async function uploadApimartReferences(config: AiConfig, references: Refe
     const videoUrls: string[] = [];
     const audioUrls: string[] = [];
     for (const image of references) {
-        const dataUrl = await imageToDataUrl(image);
+        const directUrl = image.dataUrl?.trim() || "";
+        if (/^https?:\/\//i.test(directUrl)) {
+            if (isAudioReference(directUrl)) audioUrls.push(directUrl);
+            else if (isVideoReference(directUrl)) videoUrls.push(directUrl);
+            else imageUrls.push(directUrl);
+            continue;
+        }
+        const dataUrl = await imageToDataUrl(image).catch(() => "");
         if (!dataUrl) continue;
         if (/^https?:\/\//i.test(dataUrl)) {
             if (isAudioReference(dataUrl)) audioUrls.push(dataUrl);

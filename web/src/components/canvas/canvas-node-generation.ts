@@ -173,7 +173,16 @@ export function buildNodeResponseMessages(context: NodeGenerationContext): AiTex
 
 export async function hydrateNodeGenerationContext(context: NodeGenerationContext) {
     const { imageToDataUrl } = await import("@/services/image-storage");
-    return { ...context, referenceImages: await Promise.all(context.referenceImages.map(async (image) => ({ ...image, dataUrl: await imageToDataUrl(image) }))) };
+    return {
+        ...context,
+        referenceImages: await Promise.all(
+            context.referenceImages.map(async (image) => ({
+                ...image,
+                // 远程图床可能无 CORS（如 APIMart 图床），http URL 直接透传，避免 fetch 被拦截
+                dataUrl: /^https?:\/\//i.test(image.dataUrl || image.url || "") ? image.dataUrl || image.url || "" : await imageToDataUrl(image),
+            })),
+        ),
+    };
 }
 
 function readNodeTextInput(node: CanvasNodeData) {
