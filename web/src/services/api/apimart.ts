@@ -961,7 +961,8 @@ export async function requestApimartImages(config: AiConfig, input: ApimartImage
     if (!baseUrl || !config.apiKey.trim()) throw new Error(apiText("baseUrlRequired"));
 
     const cfg = imageConfig(input.model);
-    const payload: ApimartPayload = { model: normalizeModelName(input.model), prompt: input.prompt };
+    // 出站 model 必须原文透传（APIMart 模型 ID 含点号），normalize 只用于内部匹配
+    const payload: ApimartPayload = { model: input.model.trim(), prompt: input.prompt };
     if (input.size) payload.size = input.size;
     if (input.quality) payload.quality = input.quality;
     if (input.background) payload.background = input.background;
@@ -1004,7 +1005,7 @@ export async function createApimartVideoTask(
     if (!baseUrl || !config.apiKey.trim()) throw new Error(apiText("apiKeyRequired"));
 
     const cfg = videoConfig(model);
-    const payload: ApimartPayload = { model: normalizeModelName(model), prompt };
+    const payload: ApimartPayload = { model: model.trim(), prompt };
     if (params.size) payload[cfg.aspectField || "aspect_ratio"] = params.size;
     payload.duration = params.seconds;
     if (params.resolution) payload.resolution = params.resolution;
