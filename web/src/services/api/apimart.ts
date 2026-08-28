@@ -978,7 +978,10 @@ export async function requestApimartImages(config: AiConfig, input: ApimartImage
     const validationError = validateImageInputs(payload, input.model);
     if (validationError) throw new Error(validationError);
 
-    const path = input.isEdit ? "/images/edits" : "/images/generations";
+    // APIMart 网关规则：/images/edits 只支持 Grok 图像模型；其他模型的参考图
+    // 需走 /images/generations 并携带 image_urls 字段（上面已按模型归一化）。
+    const isGrokEdit = input.isEdit && normalizeModelName(input.model).includes("grok-imagine");
+    const path = isGrokEdit ? "/images/edits" : "/images/generations";
     const { body } = await apimartJson(baseUrl, config.apiKey, path, { method: "POST", body: JSON.stringify(payload) });
 
     const direct = (body as { data?: Array<{ url?: string }> }).data?.filter((item) => item.url).map((item) => item.url as string) || [];
