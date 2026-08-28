@@ -731,17 +731,18 @@ async function uploadReferenceImage(baseUrl: string, apiKey: string, dataUrl: st
 async function normalizeReferenceUrls(baseUrl: string, apiKey: string, references: ReferenceImage[]): Promise<string[]> {
     const urls: string[] = [];
     for (const image of references) {
-        const dataUrl = image.dataUrl?.trim() || (await imageToDataUrl(image).catch(() => "")).trim();
-        if (!dataUrl) continue;
-        if (/^https?:\/\//i.test(dataUrl)) {
-            urls.push(dataUrl);
+        const direct = image.dataUrl?.trim() || "";
+        // 远程 http URL 直接透传（APIMart 服务端自行下载）
+        if (/^https?:\/\//i.test(direct)) {
+            urls.push(direct);
             continue;
         }
-        if (/^data:/i.test(dataUrl) || /^blob:/i.test(dataUrl)) {
-            urls.push(await uploadReferenceImage(baseUrl, apiKey, dataUrl));
-            continue;
-        }
-        urls.push(dataUrl);
+        // data:/blob:/storageKey 统一经 imageToDataUrl 解析成 base64。
+        // blob: 对象 URL 不能直接交给 dataUrlToFile——会解出 0 字节文件，
+        // 服务端将其判定为 text/plain 而拒收。
+        const dataUrl = (await imageToDataUrl(image).catch(() => "")).trim();
+        if (!dataUrl || !/^data:image\//i.test(dataUrl)) continue;
+        urls.push(await uploadReferenceImage(baseUrl, apiKey, dataUrl));
     }
     return urls;
 }
