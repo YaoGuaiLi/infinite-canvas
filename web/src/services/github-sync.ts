@@ -58,7 +58,10 @@ async function githubFetch(config: GithubSyncConfig, path: string, init: Request
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), GITHUB_REQUEST_TIMEOUT_MS);
     try {
-        return await fetch(buildGithubUrl(config, path), { ...init, headers, signal: controller.signal });
+        // GitHub API 响应带 Cache-Control: max-age=60，浏览器会把 404 缓存一分钟：
+        // 首次同步“文件不存在”的 GET 被缓存后，紧接着的更新拿不到 sha（422 sha wasn't supplied）。
+        // 同步语义必须实时，禁用 HTTP 缓存。
+        return await fetch(buildGithubUrl(config, path), { ...init, headers, signal: controller.signal, cache: "no-store" });
     } catch (error) {
         if (error instanceof Error && error.name === "AbortError") throw new Error(githubText("requestTimeout"));
         if (error instanceof TypeError) throw new Error(githubText("connectionFailed"));
