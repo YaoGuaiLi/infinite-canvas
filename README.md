@@ -48,6 +48,7 @@
 
 本仓库（[YaoGuaiLi/infinite-canvas](https://github.com/YaoGuaiLi/infinite-canvas)）在 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 上游基础上新增与优化了以下特性：
 
+- **内置 Timeline Studio AI 视频多轨剪辑器**：新增独立页面入口 `/editor`（顶部导航栏「AI 剪辑」），开箱集成基于 WebGPU + WASM FFmpeg 的多轨时间轴剪辑、自动字幕、AI 配音与画中画合成，支持全屏与多主题自适应，并配置 Vercel COOP/COEP 安全响应头支持多线程音视频渲染。
 - **内置 AutoDL ComfyUI 工作流节点插件**：内置 [infinite-canvas-plugin-comfyui-autodl](https://github.com/YaoGuaiLi/infinite-canvas-plugin-comfyui-autodl)，直接在画布创建菜单提供「ComfyUI 工作流」节点，开箱即用。
   - 支持直接调用 AutoDL.Art 平台海量 ComfyUI 官方/自定义工作流（文生图、多图参考、首尾帧控制、对口型、IndexTTS2 语音合成等）。
   - 动态从 API 拉取工作流表单参数，支持上游连线节点素材与 `@` 标签快速绑定参考槽位。

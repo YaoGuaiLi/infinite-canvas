@@ -327,9 +327,18 @@ apiErrors: { requestFailed: "Request failed", requestCanceled: "Request canceled
         canvas: "My Canvases",
         image: "Image Studio",
         video: "Video Studio",
+        editor: "Timeline Studio",
         prompts: "Prompt Library",
         assets: "My Assets",
         config: "Settings",
+    },
+    editor: {
+        title: "Timeline Studio",
+        subtitle: "Multi-track timeline · AI video editor & voiceover",
+        refresh: "Reload editor",
+        fullscreen: "Fullscreen",
+        exitFullscreen: "Exit fullscreen",
+        openExternal: "Open in new tab",
     },
     topNav: {
         openMenu: "Open navigation menu",
