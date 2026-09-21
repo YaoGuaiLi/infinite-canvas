@@ -71,6 +71,51 @@
     }</script>
     <script type="module" crossorigin src="/editor/assets/editor-nFBs2xkW.js"></script>
     <link rel="stylesheet" crossorigin href="/editor/assets/editor-gW4Sx7Di.css">
+    <script>
+      // Infinite Canvas 宿主与时间轴剪辑器通信桥接
+      window.addEventListener("message", async function (event) {
+        if (!event.data || event.data.type !== "TIMELINE_IMPORT_MEDIA") return;
+        var items = event.data.items;
+        if (!items || !items.length) return;
+        try {
+          var dt = new DataTransfer();
+          for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            var blob = new Blob([it.buffer], { type: it.mimeType });
+            var file = new File([blob], it.name, { type: it.mimeType });
+            dt.items.add(file);
+          }
+          // 1. 尝试触发剪辑器内的文件选择输入框
+          var fileInputs = Array.from(document.querySelectorAll('input[type="file"]'));
+          var dispatched = false;
+          for (var j = 0; j < fileInputs.length; j++) {
+            try {
+              fileInputs[j].files = dt.files;
+              fileInputs[j].dispatchEvent(new Event("change", { bubbles: true }));
+              dispatched = true;
+              break;
+            } catch (e) {}
+          }
+          // 2. 派发 drop 事件到根容器或 drop-zone
+          var dropTarget = document.querySelector('[data-drop-zone]') || document.querySelector('#root') || document.body;
+          if (dropTarget) {
+            var dropEvent = new DragEvent("drop", {
+              bubbles: true,
+              cancelable: true,
+              dataTransfer: dt,
+            });
+            dropTarget.dispatchEvent(dropEvent);
+          }
+          if (window.parent) {
+            window.parent.postMessage({ type: "TIMELINE_IMPORT_SUCCESS", count: items.length }, "*");
+          }
+        } catch (err) {
+          if (window.parent) {
+            window.parent.postMessage({ type: "TIMELINE_IMPORT_ERROR", message: String(err) }, "*");
+          }
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

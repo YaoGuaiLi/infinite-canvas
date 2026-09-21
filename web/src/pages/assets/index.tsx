@@ -425,7 +425,9 @@ function AssetCard({ asset, onOpen, onEdit, onCopy, onDownload, onDelete }: { as
                     {cover ? (
                         <img src={cover} alt={asset.title} className="aspect-[4/3] w-full object-cover" />
                     ) : (
-                        <div className="flex aspect-[4/3] items-center justify-center bg-stone-100 p-5 text-center text-sm leading-6 text-stone-600 dark:bg-stone-900 dark:text-stone-300">{asset.kind === "text" ? asset.data.content : t("assets.noCover")}</div>
+                        <div className="flex aspect-[4/3] w-full max-h-48 items-center justify-center overflow-hidden bg-stone-100 p-4 text-center text-sm leading-6 text-stone-600 dark:bg-stone-900 dark:text-stone-300">
+                            <span className="line-clamp-4 select-none whitespace-pre-wrap break-words">{asset.kind === "text" ? asset.data.content : t("assets.noCover")}</span>
+                        </div>
                     )}
                 </button>
             }

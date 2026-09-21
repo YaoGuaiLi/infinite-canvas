@@ -1,15 +1,15 @@
 {
   "name": "infinite-canvas",
-  "version": "0.1.0",
-  "description": "Use ZCode to read and operate Infinite Canvas through the local Canvas Agent MCP server.",
+  "version": "0.2.0",
+  "description": "Use ZCode to read and operate Infinite Canvas and Timeline Studio through the unified Agent skills.",
   "author": {
-    "name": "basketikun",
+    "name": "basketikun & YaoGuaiLi",
     "url": "https://canvas.best/"
   },
   "homepage": "https://canvas.best/",
-  "repository": "https://github.com/basketikun/infinite-canvas",
+  "repository": "https://github.com/YaoGuaiLi/infinite-canvas",
   "license": "MIT",
-  "keywords": ["infinite-canvas", "canvas", "mcp", "agent"],
+  "keywords": ["infinite-canvas", "timeline-studio", "canvas", "video-editor", "mcp", "agent"],
   "skills": "skills",
   "mcpServers": {
     "infinite-canvas": {
