@@ -46,10 +46,18 @@
 
 ## Fork 增强功能
 
-本仓库（[YaoGuaiLi/infinite-canvas](https://github.com/YaoGuaiLi/infinite-canvas)）在 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 上游基础上新增：
+本仓库（[YaoGuaiLi/infinite-canvas](https://github.com/YaoGuaiLi/infinite-canvas)）在 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 上游基础上新增与优化了以下特性：
 
-- **GitHub 仓库备份**：新增「云同步」渠道下拉，可用 GitHub 私有仓库（Contents API）同步画布、我的资产、生成记录和本地媒体文件。在配置弹窗 → 云同步中选择 **GitHub 仓库**，填入 `owner/repo` 和仅授予目标仓库 `Contents: Read and write` 的 Fine-grained PAT 即可；国内网络不稳时可将 API 地址换为自有反代。
-- **APIMart 渠道**：渠道编辑器新增 **APIMart** 调用格式（默认 `https://api.apimart.ai/v1`），内置任务式生图 / 生视频适配：参考图自动上传、任务轮询、按模型的尺寸 / 分辨率 / 比例 / 质量参数归一化（gemini-3.1、nano-banana、seedream-5、grok-imagine、imagen-4、flux 等），浏览器直连无需反代。
+- **内置 AutoDL ComfyUI 工作流节点插件**：内置 [infinite-canvas-plugin-comfyui-autodl](https://github.com/YaoGuaiLi/infinite-canvas-plugin-comfyui-autodl)，直接在画布创建菜单提供「ComfyUI 工作流」节点，开箱即用。
+  - 支持直接调用 AutoDL.Art 平台海量 ComfyUI 官方/自定义工作流（文生图、多图参考、首尾帧控制、对口型、IndexTTS2 语音合成等）。
+  - 动态从 API 拉取工作流表单参数，支持上游连线节点素材与 `@` 标签快速绑定参考槽位。
+  - 生成结果自动下载并缓存到本地 IndexedDB，避免依赖短期外链。
+  - 源码内置于 `plugins/canvas/comfyui-autodl/`，产物随站点同步打包。
+- **GitHub 仓库云同步备份**：新增「云同步」渠道下拉，可用 GitHub 私有仓库（Contents API）同步画布、我的资产、生成记录和本地媒体文件。在配置弹窗 → 云同步中选择 **GitHub 仓库**，填入 `owner/repo` 和仅授予目标仓库 `Contents: Read and write` 的 Fine-grained PAT 即可；国内网络不稳时可将 API 地址换为自有反代。
+- **APIMart 渠道原生适配**：渠道编辑器新增 **APIMart** 调用格式（默认 `https://api.apimart.ai/v1`），内置任务式生图 / 生视频适配：参考图自动上传、任务轮询、按模型的尺寸 / 分辨率 / 比例 / 质量参数归一化（gemini-3.1、nano-banana、seedream-5、grok-imagine、imagen-4、flux 等），浏览器直连无需反代。
+- **免 CORS 跨域图片持久化代理**：内置 Vercel Edge Function (`/api/image-proxy`)，自动解决无 CORS 头图床（如 APIMart getapib 等）被浏览器阻止下载的问题，确保远程生成图片能安全拉取并写入本地 IndexedDB，防止临时外链过期导致画布裂图。
+- **纯净无推广**：移除了上游 README 中插入的各类第三方 API 赞助商推广与返利推广链接，保持文档纯净。
+- **访问与分析统计**：在首页注入 Impact 访问分析代码，方便掌控自部署站点的流量与使用情况。
 
 ## 快速开始
 

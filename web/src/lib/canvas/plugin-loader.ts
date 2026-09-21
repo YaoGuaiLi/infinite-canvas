@@ -138,7 +138,7 @@ async function loadLocalPlugins() {
                     description: plugin.description,
                     url,
                     source,
-                    enabled: existing?.enabled ?? false, // Preserve the user setting; new discoveries default to disabled.
+                    enabled: existing?.enabled ?? true, // Preserve user setting; default to enabled for built-in plugins.
                     local: true,
                 });
             } catch (error) {
