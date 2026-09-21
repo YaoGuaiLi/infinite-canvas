@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
-import { App, Button, Checkbox, Empty, Modal, Select, Tabs, Tag, Typography } from "antd";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { App, Button, Checkbox, Empty, Modal, Select, Tabs, Tag } from "antd";
 import { FolderDown, FolderPlus, Image as ImageIcon, Music2, Video as VideoIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { useAssetStore, type Asset } from "@/stores/use-asset-store";
-import { useCanvasStore, type CanvasProject } from "@/stores/canvas/use-canvas-store";
+import { useCanvasStore } from "@/stores/canvas/use-canvas-store";
 import { CanvasNodeType, type CanvasNodeData } from "@/types/canvas";
-import { getImageBlob } from "@/services/image-storage";
-import { getMediaBlob } from "@/services/file-storage";
+import { ensureImagePreview, getImageBlob, getImagePreviewRevision, previewUrlFor, resolveImageUrl, subscribeImagePreviews } from "@/services/image-storage";
+import { getMediaBlob, resolveMediaUrl } from "@/services/file-storage";
 
 export type ImportMediaPayload = {
     name: string;
@@ -24,6 +24,7 @@ type Props = {
 export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
     const { message } = App.useApp();
     const { t } = useTranslation();
+    useSyncExternalStore(subscribeImagePreviews, getImagePreviewRevision);
     const assets = useAssetStore((state) => state.assets);
     const projects = useCanvasStore((state) => state.projects);
 
@@ -46,7 +47,8 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
         if (!currentProject) return [];
         return (currentProject.nodes || []).filter((node) => {
             if (node.type === CanvasNodeType.Image || node.type === CanvasNodeType.Video || node.type === CanvasNodeType.Audio) {
-                return Boolean(node.metadata?.storageKey || node.metadata?.content);
+                const images = node.metadata?.images || [];
+                return Boolean(node.metadata?.storageKey || node.metadata?.content || images.some((img) => img.storageKey || img.content));
             }
             return false;
         });
@@ -126,14 +128,17 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
                     if (!selectedKeys.has(key)) continue;
                     try {
                         let blob: Blob | null = null;
-                        const storageKey = node.metadata?.storageKey;
-                        const url = (node.metadata?.content || "") as string;
+                        const images = node.metadata?.images || [];
+                        const primaryId = node.metadata?.primaryImageId || images[0]?.id;
+                        const primaryImg = images.find((i) => i.id === primaryId) || images[0];
+                        const storageKey = primaryImg?.storageKey || node.metadata?.storageKey;
+                        const contentUrl = primaryImg?.content || (node.metadata?.content as string) || "";
 
                         if (storageKey) {
                             blob = node.type === CanvasNodeType.Image ? await getImageBlob(storageKey) : await getMediaBlob(storageKey);
                         }
-                        if (!blob && url) {
-                            const res = await fetch(url);
+                        if (!blob && contentUrl) {
+                            const res = await fetch(contentUrl);
                             blob = await res.blob();
                         }
 
@@ -171,13 +176,13 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
         <Modal
             title={
                 <div className="flex items-center gap-2 text-base font-semibold">
-                    <FolderInputIcon className="size-4 text-emerald-500" />
+                    <FolderDown className="size-4 text-emerald-500" />
                     <span>{t("editor.importModalTitle")}</span>
                 </div>
             }
             open={open}
             onCancel={onClose}
-            width={760}
+            width={780}
             destroyOnClose
             footer={
                 <div className="flex items-center justify-between border-t border-stone-200 px-1 pt-3 dark:border-stone-800">
@@ -220,12 +225,12 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
                                             onChange={(e) => handleSelectAll(e.target.checked)}
                                             checked={mediaAssets.length > 0 && mediaAssets.every((a) => selectedKeys.has(`asset:${a.id}`))}
                                         >
-                                            <span className="text-xs">{t("common.selectAll")}</span>
+                                            <span className="text-xs">{t("common.selectAll", "全选")}</span>
                                         </Checkbox>
                                     )}
                                 </div>
                                 {mediaAssets.length ? (
-                                    <div className="grid max-h-[380px] grid-cols-3 gap-2.5 overflow-y-auto p-1 thin-scrollbar">
+                                    <div className="grid max-h-[400px] grid-cols-3 gap-2.5 overflow-y-auto p-1 thin-scrollbar">
                                         {mediaAssets.map((asset) => {
                                             const selected = selectedKeys.has(`asset:${asset.id}`);
                                             return (
@@ -239,13 +244,7 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
                                                     }`}
                                                 >
                                                     <div className="relative aspect-video w-full overflow-hidden rounded bg-stone-200 dark:bg-stone-800">
-                                                        {asset.coverUrl || asset.kind === "image" ? (
-                                                            <img src={asset.coverUrl || (asset.data as { dataUrl?: string }).dataUrl} alt="" className="size-full object-cover" />
-                                                        ) : (
-                                                            <div className="grid size-full place-items-center text-stone-400">
-                                                                {asset.kind === "video" ? <VideoIcon className="size-6" /> : <Music2 className="size-6" />}
-                                                            </div>
-                                                        )}
+                                                        <AssetMediaPreview asset={asset} />
                                                         <div className="absolute top-1.5 left-1.5">
                                                             <Tag className="m-0 text-[10px] uppercase">{asset.kind}</Tag>
                                                         </div>
@@ -271,7 +270,7 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
                         label: (
                             <span className="flex items-center gap-1.5">
                                 <ImageIcon className="size-3.5" />
-                                {t("editor.tabCanvasNodes")}
+                                {t("editor.tabCanvasNodes")} ({canvasMediaNodes.length})
                             </span>
                         ),
                         children: (
@@ -295,17 +294,16 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
                                                 canvasMediaNodes.every((n) => selectedKeys.has(`node:${currentProject?.id}:${n.id}`))
                                             }
                                         >
-                                            <span className="text-xs">{t("common.selectAll")}</span>
+                                            <span className="text-xs">{t("common.selectAll", "全选")}</span>
                                         </Checkbox>
                                     )}
                                 </div>
 
                                 {canvasMediaNodes.length ? (
-                                    <div className="grid max-h-[380px] grid-cols-3 gap-2.5 overflow-y-auto p-1 thin-scrollbar">
+                                    <div className="grid max-h-[400px] grid-cols-3 gap-2.5 overflow-y-auto p-1 thin-scrollbar">
                                         {canvasMediaNodes.map((node) => {
                                             const key = `node:${currentProject?.id}:${node.id}`;
                                             const selected = selectedKeys.has(key);
-                                            const previewUrl = (node.metadata?.content || "") as string;
                                             return (
                                                 <div
                                                     key={node.id}
@@ -317,13 +315,7 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
                                                     }`}
                                                 >
                                                     <div className="relative aspect-video w-full overflow-hidden rounded bg-stone-200 dark:bg-stone-800">
-                                                        {node.type === CanvasNodeType.Image && previewUrl ? (
-                                                            <img src={previewUrl} alt="" className="size-full object-cover" />
-                                                        ) : (
-                                                            <div className="grid size-full place-items-center text-stone-400">
-                                                                {node.type === CanvasNodeType.Video ? <VideoIcon className="size-6" /> : <Music2 className="size-6" />}
-                                                            </div>
-                                                        )}
+                                                        <CanvasNodeMediaPreview node={node} />
                                                         <div className="absolute top-1.5 left-1.5">
                                                             <Tag className="m-0 text-[10px] uppercase">{node.type}</Tag>
                                                         </div>
@@ -350,6 +342,163 @@ export function EditorAssetImportModal({ open, onClose, onImport }: Props) {
     );
 }
 
-function FolderInputIcon({ className }: { className?: string }) {
-    return <FolderDown className={className} />;
+function CanvasNodeMediaPreview({ node }: { node: CanvasNodeData }) {
+    const [url, setUrl] = useState<string>("");
+    const [loadError, setLoadError] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        setLoadError(false);
+
+        const load = async () => {
+            const images = node.metadata?.images || [];
+            const primaryId = node.metadata?.primaryImageId || images[0]?.id;
+            const primaryImg = images.find((i) => i.id === primaryId) || images[0];
+            const storageKey = primaryImg?.storageKey || node.metadata?.storageKey;
+            const direct = primaryImg?.content || (node.metadata?.content as string) || "";
+
+            if (storageKey) {
+                // 1. 优先使用本地同步缩略图
+                const preview = previewUrlFor(storageKey);
+                if (preview && active) {
+                    setUrl(preview);
+                    return;
+                }
+                // 异步触发缩略图构建
+                void ensureImagePreview(storageKey);
+
+                // 2. 从 IndexedDB 提取 blob URL
+                const resolved = node.type === CanvasNodeType.Image
+                    ? await resolveImageUrl(storageKey, direct)
+                    : await resolveMediaUrl(storageKey, direct);
+                if (active && resolved) {
+                    setUrl(resolved);
+                    return;
+                }
+            }
+
+            if (direct && active) {
+                setUrl(direct);
+            }
+        };
+
+        void load();
+        return () => {
+            active = false;
+        };
+    }, [node]);
+
+    if (!url || loadError) {
+        return (
+            <div className="grid size-full place-items-center text-stone-400 bg-stone-100 dark:bg-stone-800">
+                {node.type === CanvasNodeType.Video ? <VideoIcon className="size-6" /> : <ImageIcon className="size-6" />}
+            </div>
+        );
+    }
+
+    if (node.type === CanvasNodeType.Video) {
+        return (
+            <video
+                src={`${url}#t=0.1`}
+                muted
+                playsInline
+                preload="metadata"
+                className="size-full object-cover"
+                onError={() => setLoadError(true)}
+            />
+        );
+    }
+
+    return (
+        <img
+            src={url}
+            alt={node.title || ""}
+            className="size-full object-cover"
+            onError={() => setLoadError(true)}
+        />
+    );
+}
+
+function AssetMediaPreview({ asset }: { asset: Asset }) {
+    const [url, setUrl] = useState<string>("");
+    const [loadError, setLoadError] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        setLoadError(false);
+
+        const load = async () => {
+            if (asset.kind === "video") {
+                if (asset.coverUrl) {
+                    setUrl(asset.coverUrl);
+                    return;
+                }
+                if (asset.data.storageKey) {
+                    const resolved = await resolveMediaUrl(asset.data.storageKey, asset.data.url);
+                    if (active && resolved) {
+                        setUrl(resolved);
+                        return;
+                    }
+                }
+                if (asset.data.url && active) setUrl(asset.data.url);
+                return;
+            }
+
+            if (asset.kind === "image") {
+                if (asset.coverUrl) {
+                    setUrl(asset.coverUrl);
+                    return;
+                }
+                if (asset.data.storageKey) {
+                    const preview = previewUrlFor(asset.data.storageKey);
+                    if (preview && active) {
+                        setUrl(preview);
+                        return;
+                    }
+                    void ensureImagePreview(asset.data.storageKey);
+                    const resolved = await resolveImageUrl(asset.data.storageKey, asset.data.dataUrl);
+                    if (active && resolved) {
+                        setUrl(resolved);
+                        return;
+                    }
+                }
+                if (asset.data.dataUrl && active) setUrl(asset.data.dataUrl);
+            }
+        };
+
+        void load();
+        return () => {
+            active = false;
+        };
+    }, [asset]);
+
+    if (!url || loadError) {
+        return (
+            <div className="grid size-full place-items-center text-stone-400 bg-stone-100 dark:bg-stone-800">
+                {asset.kind === "video" ? <VideoIcon className="size-6" /> : <ImageIcon className="size-6" />}
+            </div>
+        );
+    }
+
+    if (asset.kind === "video" && !asset.coverUrl) {
+        return (
+            <video
+                src={`${url}#t=0.1`}
+                muted
+                playsInline
+                preload="metadata"
+                className="size-full object-cover"
+                onError={() => setLoadError(true)}
+            />
+        );
+    }
+
+    return (
+        <img
+            src={url}
+            alt={asset.title || ""}
+            className="size-full object-cover"
+            onError={() => setLoadError(true)}
+        />
+    );
 }

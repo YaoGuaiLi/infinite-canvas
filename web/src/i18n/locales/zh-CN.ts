@@ -20,6 +20,7 @@ export default {
         created: "创建：{{date}}",
         updated: "更新：{{date}}",
         all: "全部",
+        selectAll: "全选",
         view: "查看",
         download: "下载",
         upload: "上传",

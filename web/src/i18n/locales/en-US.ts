@@ -20,6 +20,7 @@ export default {
         created: "Created: {{date}}",
         updated: "Updated: {{date}}",
         all: "All",
+        selectAll: "Select all",
         view: "View",
         download: "Download",
         upload: "Upload",
