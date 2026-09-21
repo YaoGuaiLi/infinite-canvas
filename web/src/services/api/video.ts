@@ -8,6 +8,7 @@ import { getMediaBlob, resolveMediaUrl, uploadMediaFile, type UploadedFile } fro
 import { imageToDataUrl } from "@/services/image-storage";
 import { boolConfig, buildApiUrl, modelOptionName, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig } from "@/stores/use-config-store";
 import { createApimartVideoTask, pollApimartVideoTask } from "@/services/api/apimart";
+import { DEFAULT_TASK_TIMEOUT_MS, getAdaptivePollInterval, resilientDelay } from "@/lib/polling-guard";
 import { runModelPlugin } from "./model-plugin";
 import type { ReferenceImage } from "@/types/image";
 import type { ReferenceAudio, ReferenceVideo } from "@/types/media";
@@ -49,15 +50,19 @@ export async function requestVideoGeneration(config: AiConfig, prompt: string, r
 }
 
 export async function waitForVideoGenerationTask(config: AiConfig, task: VideoGenerationTask, options?: RequestOptions): Promise<VideoGenerationResult> {
-    for (let attempt = 0; attempt < 120; attempt += 1) {
+    const startTime = Date.now();
+    while (true) {
         if (options?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+        const elapsedMs = Date.now() - startTime;
+        if (elapsedMs > DEFAULT_TASK_TIMEOUT_MS) {
+            throw new Error(apiText("videoTimeout", { provider: "" }));
+        }
         const state = await pollVideoGenerationTask(config, task, options);
         if (state.status === "completed") return state.result;
         if (state.status === "failed") throw videoTaskFailed(state.error);
-        if (attempt === 119) throw new Error(apiText("videoTimeout", { provider: "" }));
-        await delay(2500, options?.signal);
+        const interval = getAdaptivePollInterval(elapsedMs);
+        await resilientDelay(interval, options?.signal);
     }
-    throw new Error(apiText("videoTimeout", { provider: "" }));
 }
 
 export function isVideoTaskFailed(error: unknown) {

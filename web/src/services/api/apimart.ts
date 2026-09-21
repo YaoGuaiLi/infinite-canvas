@@ -2,6 +2,7 @@ import i18n from "@/i18n";
 import { nanoid } from "nanoid";
 import { dataUrlToFile } from "@/lib/image-utils";
 import { imageToDataUrl } from "@/services/image-storage";
+import { DEFAULT_TASK_TIMEOUT_MS, getAdaptivePollInterval, resilientDelay } from "@/lib/polling-guard";
 import type { ReferenceImage } from "@/types/image";
 import type { AiConfig } from "@/stores/use-config-store";
 
@@ -928,16 +929,24 @@ function readTaskResult(body: unknown): { status: string; progress: number; urls
 }
 
 async function pollTask(baseUrl: string, apiKey: string, taskId: string, signal?: AbortSignal): Promise<{ status: string; urls: string[]; error?: string }> {
-    for (let attempt = 0; attempt < APIMART_MAX_POLL_ATTEMPTS; attempt += 1) {
-        if (attempt > 0) {
-            await delay(APIMART_POLL_INTERVAL_MS, signal);
+    const startTime = Date.now();
+    let attempt = 0;
+    while (true) {
+        if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+        const elapsedMs = Date.now() - startTime;
+        if (elapsedMs > DEFAULT_TASK_TIMEOUT_MS) {
+            throw new Error(apiText("apimartTaskTimeout"));
         }
+        if (attempt > 0) {
+            const interval = getAdaptivePollInterval(elapsedMs);
+            await resilientDelay(interval, signal);
+        }
+        attempt += 1;
         const { body } = await apimartJson(baseUrl, apiKey, `/tasks/${encodeURIComponent(taskId)}?language=zh`);
         const result = readTaskResult(body);
         if (result.status === "completed") return { status: "completed", urls: result.urls };
         if (result.error || result.status === "failed") return { status: "failed", urls: [], error: result.error || apiText("apimartTaskFailed") };
     }
-    throw new Error(apiText("apimartTaskTimeout"));
 }
 
 // ---------------------------------------------------------------------------

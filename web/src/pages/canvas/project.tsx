@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { requestEdit, requestGeneration, requestImageQuestion } from "@/services/api/image";
 import { requestAudioGeneration, storeGeneratedAudio } from "@/services/api/audio";
 import { createVideoGenerationTask, isVideoTaskFailed, storeGeneratedVideo, waitForVideoGenerationTask } from "@/services/api/video";
+import { onPageWakeup } from "@/lib/polling-guard";
 import { defaultConfig, useConfigStore, useEffectiveConfig } from "@/stores/use-config-store";
 import { ensureImagePreview, uploadImage } from "@/services/image-storage";
 import { uploadMediaFile, type UploadedFile } from "@/services/file-storage";
@@ -470,6 +471,17 @@ function InfiniteCanvasPage() {
         // Resume once after the current canvas is restored, not on later config identity changes.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectLoaded]);
+
+    // 双保险切台即时唤醒：从后台切回前台时，自动检测因休眠或限频挂起的未完成视频任务并立即激活轮询
+    useEffect(() => {
+        if (!projectLoaded) return;
+        return onPageWakeup(() => {
+            nodesRef.current
+                .filter(hasResumableVideoTask)
+                .filter((node) => !videoPollIdsRef.current.has(node.id))
+                .forEach((node) => void pollVideoNodeTask(node, true));
+        });
+    }, [pollVideoNodeTask, projectLoaded]);
 
     useEffect(() => {
         if (!projectLoaded || !["new", "recent", "choose"].includes(searchParams.get("mode") || "")) return;
