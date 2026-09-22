@@ -9,9 +9,11 @@ const REPO_PLUGIN_URL = "https://github.com/YaoGuaiLi/infinite-canvas";
 const REPO_AGENT_URL = "https://github.com/YaoGuaiLi/infinite-canvas/tree/main/canvas-agent";
 const REPO_PLUGIN_GH_PROXY_URL = "https://ghfast.top/https://github.com/YaoGuaiLi/infinite-canvas/archive/refs/heads/main.zip";
 const REPO_PLUGIN_GH_DIRECT_URL = "https://github.com/YaoGuaiLi/infinite-canvas/archive/refs/heads/main.zip";
-const REPO_AGENT_GH_DIRECT_URL = "https://github.com/YaoGuaiLi/infinite-canvas/archive/refs/heads/main.zip";
-const REPO_AGENT_GH_PROXY_URL = "https://ghfast.top/https://github.com/YaoGuaiLi/infinite-canvas/archive/refs/heads/main.zip";
-const AGENT_NPM_COMMAND = "npx -y @basketikun/canvas-agent@latest";
+
+// 本仓库增强版 MCP 启动命令：优先使用本地源码目录（含 timeline-editor 与 creative-studio 技能）；亦提供 GitHub 源码一键克隆运行命令
+const LOCAL_AGENT_START_COMMAND = "cd canvas-agent && npm install && npm run start";
+const MCP_SOURCE_RUN_COMMAND = "git clone https://github.com/YaoGuaiLi/infinite-canvas.git && cd infinite-canvas/canvas-agent && npm install && node dist/index.js mcp";
+const MCP_ACCEL_RUN_COMMAND = "git clone https://ghfast.top/https://github.com/YaoGuaiLi/infinite-canvas.git && cd infinite-canvas/canvas-agent && npm install && node dist/index.js mcp";
 
 export function AgentConnectView({
     theme,
@@ -78,7 +80,7 @@ export function AgentConnectView({
                         {t("agent.connect.pluginTextEnhanced")}
                     </div>
 
-                    {/* 一键安装按钮组（支持所有支持 MCP 的 Agent） */}
+                    {/* 一键安装按钮组（支持所有支持 MCP 的 Agent，支持协议唤醒） */}
                     <div className="mt-3 grid gap-2">
                         <div className="grid grid-cols-2 gap-2">
                             <Button
@@ -92,6 +94,13 @@ export function AgentConnectView({
                             <Button
                                 type="primary"
                                 icon={<Rocket className="size-3.5" />}
+                                className="!h-9 !text-xs !font-semibold bg-indigo-600 hover:bg-indigo-500"
+                                onClick={() => openExternal("codeg://plugin/install/infinite-canvas")}
+                            >
+                                {t("agent.connect.oneClickCodeg")}
+                            </Button>
+                            <Button
+                                icon={<Rocket className="size-3.5" />}
                                 className="!h-9 !text-xs !font-semibold"
                                 onClick={() => openExternal("vscode://zed.plugin/install/infinite-canvas")}
                             >
@@ -100,16 +109,9 @@ export function AgentConnectView({
                             <Button
                                 icon={<TerminalSquare className="size-3.5" />}
                                 className="!h-9 !text-xs !font-semibold"
-                                onClick={() => copyCommand("npx -y @basketikun/canvas-agent@latest mcp")}
+                                onClick={() => copyCommand(MCP_ACCEL_RUN_COMMAND)}
                             >
                                 {t("agent.connect.oneClickMcp")}
-                            </Button>
-                            <Button
-                                icon={<BookMarked className="size-3.5" />}
-                                className="!h-9 !text-xs !font-semibold"
-                                onClick={() => openExternal(REPO_PLUGIN_URL)}
-                            >
-                                {t("agent.connect.viewPluginDocs")}
                             </Button>
                         </div>
                         <div className="rounded-md border px-2 py-1.5" style={{ borderColor: theme.node.stroke }}>
@@ -132,7 +134,7 @@ export function AgentConnectView({
                         {t("agent.connect.directTextEnhanced")}
                     </div>
 
-                    {commandLineButton(AGENT_NPM_COMMAND)}
+                    {commandLineButton(LOCAL_AGENT_START_COMMAND)}
 
                     <div className="mt-3 grid gap-2">
                         <div className="text-[11px] font-medium" style={{ color: theme.node.muted }}>{t("agent.connect.downloadAgentSource")}</div>
@@ -151,6 +153,14 @@ export function AgentConnectView({
                             >
                                 {t("agent.connect.ghProxy")}
                             </Button>
+                        </div>
+                        <div className="mt-1 flex flex-col gap-1 rounded-md border p-2 text-[11px] leading-5" style={{ borderColor: theme.node.stroke, color: theme.node.muted }}>
+                            <div className="font-medium" style={{ color: theme.node.text }}>{t("agent.connect.cloneRunTitle")}</div>
+                            <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap font-mono text-[10px]">
+                                <span className="text-stone-400">$</span>
+                                <code>{MCP_ACCEL_RUN_COMMAND}</code>
+                                <Button size="small" type="text" className="!h-5 !w-5 !min-w-5 shrink-0" icon={<Copy className="size-3" />} onClick={() => copyCommand(MCP_ACCEL_RUN_COMMAND)} />
+                            </div>
                         </div>
                         <div className="flex gap-2 text-[11px] leading-5" style={{ color: theme.node.muted }}>
                             <a href={REPO_PLUGIN_URL} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline" style={{ color: theme.node.text }}>
