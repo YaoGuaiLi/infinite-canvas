@@ -49,7 +49,9 @@
 本仓库（[YaoGuaiLi/infinite-canvas](https://github.com/YaoGuaiLi/infinite-canvas)）在 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 上游基础上新增与优化了以下特性：
 
 - **内置 Timeline Studio AI 视频多轨剪辑器**：新增独立页面入口 `/editor`（顶部导航栏「AI 剪辑」），开箱集成基于 WebGPU + WASM FFmpeg 的多轨时间轴剪辑、自动字幕、AI 配音与画中画合成，支持全屏与多主题自适应，配置 Vercel COOP/COEP 安全响应头支持多线程音视频渲染。新增**资产一键导入**功能，可在剪辑器顶栏直接将「我的资产」与「画布项目」中的图片、视频、音频送入时间轴媒体区。
-- **全能 Agent 调度连接器（双引擎联动）**：Codex / ZCode 插件全面升级，提供 `canvas`（画布操作）、`timeline-editor`（时间轴视频剪辑）、`creative-studio`（创意全能调度器）三大技能，赋能 AI 智能体同时调度无限画布灵感发散生成与时间轴视频精剪全流程。
+- **验证过的示例工作流面板**：新增顶部导航「示例工作流」(`/workflows`)，预置并验证了「短视频动作迁移」、「首尾帧平滑过渡视频」、「人物肖像精准对口型」、「多机位分镜连拍组」等开箱即用的优质拓扑模板，一键即可克隆生成全新画布工程。
+- **纯前端 WebGPU 深度提取能力**：集成 Depth-Anything-V2-Small（Q4F16 量化，仅约 19MB），默认从**魔搭社区 (ModelScope)** 高速下载并持久化至浏览器 CacheStorage 本地缓存，已缓存时实现 0 流量秒级离线加载。
+- **全能 Agent 调度连接器（双引擎联动）**：Codex / ZCode / 任意 MCP 客户端插件全面升级，提供 `canvas`（画布操作）、`timeline-editor`（时间轴视频剪辑）、`creative-studio`（创意全能调度器）三大技能。连接界面提供**一键唤醒安装**与**本仓库源码直链 / GitHub 加速直链**，解脱特定宿主绑定。
 - **长任务双保险轮询机制**：针对长耗时生视频与 APIMart 异步任务，引入前台唤醒（`visibilitychange`）即时状态对齐、15 分钟绝对时间超时与动态自适应轮询间隔，彻底根治浏览器切后台静默超时与节点卡死问题。
 - **内置 AutoDL ComfyUI 工作流节点插件**：内置 [infinite-canvas-plugin-comfyui-autodl](https://github.com/YaoGuaiLi/infinite-canvas-plugin-comfyui-autodl)，直接在画布创建菜单提供「ComfyUI 工作流」节点，开箱即用。
   - 支持直接调用 AutoDL.Art 平台海量 ComfyUI 官方/自定义工作流（文生图、多图参考、首尾帧控制、对口型、IndexTTS2 语音合成等）。

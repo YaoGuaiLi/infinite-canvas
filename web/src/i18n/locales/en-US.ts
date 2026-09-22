@@ -329,9 +329,40 @@ apiErrors: { requestFailed: "Request failed", requestCanceled: "Request canceled
         image: "Image Studio",
         video: "Video Studio",
         editor: "Timeline Studio",
+        workflows: "Templates",
         prompts: "Prompt Library",
         assets: "My Assets",
         config: "Settings",
+    },
+    workflows: {
+        badge: "Verified Templates",
+        title: "Workflow Templates",
+        description: "Curated and verified canvas workflow templates. Click to clone node topologies directly into a ready-to-use canvas.",
+        useTemplate: "Use this workflow",
+        instantiated: "Loaded workflow \"{{title}}\" into a new canvas",
+        tags: {
+            video: "Video Pipeline",
+            image: "Image Gen",
+            audio: "Lip Sync",
+        },
+        templates: {
+            motionTransfer: {
+                title: "Dance Motion Transfer",
+                desc: "Connect a character portrait with motion prompts to produce dynamic dance and movement video.",
+            },
+            firstLastFrame: {
+                title: "First & Last Frame Transition",
+                desc: "Bridge start and end keyframe images to interpolate smooth camera transitions.",
+            },
+            lipSync: {
+                title: "Portrait Audio Lip Sync",
+                desc: "Drive mouth shapes and facial expressions synchronized to spoken voiceover audio.",
+            },
+            storyboardSerial: {
+                title: "Multi-shot Storyboard",
+                desc: "Generate consistent multi-shot sequences (intro, conflict, climax, ending) with shared configurations.",
+            },
+        },
     },
     editor: {
         title: "Timeline Studio",
@@ -669,7 +700,7 @@ apiErrors: { requestFailed: "Request failed", requestCanceled: "Request canceled
         status: { failed: "Connection failed", connected: "Connected", connecting: "Connecting", disconnected: "Disconnected" },
         state: { ready: "Ready", connectionRequired: "Enter the Local URL and Connect token", invalidUrl: "The Local URL is invalid", offline: "Offline", skillReadFailed: "Failed to read Skill", skillParseFailed: "Failed to parse Skill", requestFailed: "Local Agent request failed" },
         siteTools: { canvasList: "Canvas list", generationStatus: "Generation task status", imageConfig: "Image configuration", imageGenerate: "Generate in Image Studio", videoConfig: "Video configuration", videoGenerate: "Generate in Video Studio", promptSearch: "Search prompts", assetList: "Asset list", assetAdd: "Add asset", unknownTool: "Unknown tool: {{name}}", canvasLoading: "The canvas is still loading. Try again shortly.", canvasHint: "Use site_navigate to open /canvas/{id}", assetsLoading: "Assets are still loading. Try again shortly.", assetTitleRequired: "Provide the asset title", textContentRequired: "content is required when kind=text", imageUrlRequired: "imageUrl is required when kind=image", imageReadFailed: "Could not read the image. Use a data URL or a cross-origin accessible image URL.", assetKindUnsupported: "assets_add supports only kind=text or kind=image", imageGenerationStarted: "Opened Image Studio and started generation. Use generation_get_status to query the task.", imageConfigApplied: "Opened Image Studio and applied the parameters without starting generation.", videoGenerationStarted: "Opened Video Studio and started generation. Use generation_get_status to query the task.", videoConfigApplied: "Opened Video Studio and applied the parameters without starting generation." },
-        connect: { pluginTitle: "Option 1: Use the Codex plugin", pluginText: "Install the Infinite Canvas plugin in the Codex app and launch the canvas through it. The plugin starts the local Agent and supplies the connection details automatically.", directTitle: "Option 2: Run the Agent directly", directText: "Without the Codex plugin, run the command below in a terminal, then return here to connect or enter the Local URL and Connect token manually.", commandCopied: "Command copied", pluginReminder: "Codex plugin note", pluginReminderText: "The tool list enters the Codex context and consumes additional tokens only after installing the Codex plugin or adding MCP manually. Running npx -y @basketikun/canvas-agent@latest alone does not install MCP.", removePlugin: "Remove plugin", removeMcp: "Remove manual MCP", copyCommand: "Copy command", title: "Connect local Agent", description: "Choose the connection method that fits your workflow.", webConnection: "Web connection", autoDiscover: "The Local URL and Connect token are discovered automatically by default. Enter them manually only if discovery fails.", disconnect: "Disconnect", connect: "Connect", localAddress: "Local address", urlPlaceholder: "For example http://127.0.0.1:17371", token: "Connection token", tokenPlaceholder: "Discover automatically or enter the Connect token" },
+        connect: { pluginTitle: "Option 1: One-click install the local Agent plugin (works with any MCP Agent, not just Codex)", pluginTextEnhanced: "Use the native protocols or copy the MCP command below to install the enhanced Infinite Canvas plugin (bundled with timeline-editor and creative-studio skills) from this repository into your local Agent runtime. Compatible with Codex, ZCode, Cursor, Claude Code, Cline, and every MCP-capable Agent.", directTitle: "Option 2: Run the Agent directly (this repository)", directTextEnhanced: "We recommend the published npm build. To run the repository source (with the latest skills and editor integrations), download the archive below via GitHub direct or accelerated mirror and follow the canvas-agent README.", downloadAgentSource: "Download the repository archive (canvas-agent + plugin sources):", ghDirect: "GitHub direct download", ghProxy: "GitHub accelerated mirror", repoLink: "Repository home", agentSourceLink: "canvas-agent source folder", oneClickCodex: "Install to Codex", oneClickZed: "Install to Zed / VSCode", oneClickMcp: "Copy MCP command", viewPluginDocs: "Plugin & skills docs", agentCompatibilityHint: "Compatibility: any MCP (Model Context Protocol) Agent can install this plugin, including Codex, ZCode, Cursor, Cline, Claude Code, and Windsurf.", commandCopied: "Command copied", pluginReminder: "Install reminder", pluginReminderText: "Tools enter your Agent context (and consume tokens) only after the plugin or MCP is registered in the runtime. Running npx -y @basketikun/canvas-agent@latest alone does not register MCP tools.", copyCommand: "Copy command", title: "Connect local Agent", description: "Choose the connection method that fits your workflow.", webConnection: "Web connection", autoDiscover: "The Local URL and Connect token are discovered automatically by default. Enter them manually only if discovery fails.", disconnect: "Disconnect", connect: "Connect", localAddress: "Local address", urlPlaceholder: "For example http://127.0.0.1:17371", token: "Connection token", tokenPlaceholder: "Discover automatically or enter the Connect token" },
         history: { workspace: "Workspace", defaultWorkspace: "Default canvas directory", selected: "{{count}} selected", count: "{{count}} conversations", empty: "No history", deleteCount: "Delete {{count}}", refresh: "Refresh", newThread: "New chat", selectThread: "Select {{name}}", untitled: "Untitled conversation", current: "Current", noWorkspaceThreads: "No conversations in this workspace yet", connectHint: "Connect the local Agent to view conversation history" },
         skills: { selectLocal: "Select local Skill", search: "Search Skills", loading: "Loading Skills…", noMatch: "No matching enabled Skills", none: "No Skills available", select: "Select Skill", connectHint: "Connect the Agent to use Skills" },
         skillManager: {
