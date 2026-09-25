@@ -44,25 +44,45 @@
 
 如果你在为担心没有合适的生图API来发愁，可以查看该免费生图项目：[chatgpt2api](https://github.com/basketikun/chatgpt2api)
 
-## Fork 增强功能
+## 与上游的差异（Fork 增强功能）
 
-本仓库（[YaoGuaiLi/infinite-canvas](https://github.com/YaoGuaiLi/infinite-canvas)）在 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 上游基础上新增与优化了以下特性：
+本仓库（[YaoGuaiLi/infinite-canvas](https://github.com/YaoGuaiLi/infinite-canvas)）基于上游 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 开发，在保持上游功能对齐的同时，额外集成与优化了下列能力。
 
-- **内置 Timeline Studio AI 视频多轨剪辑器**：新增独立页面入口 `/editor`（顶部导航栏「AI 剪辑」），开箱集成基于 WebGPU + WASM FFmpeg 的多轨时间轴剪辑、自动字幕、AI 配音与画中画合成，支持全屏与多主题自适应，配置 Vercel COOP/COEP 安全响应头支持多线程音视频渲染。新增**资产一键导入**功能，可在剪辑器顶栏直接将「我的资产」与「画布项目」中的图片、视频、音频送入时间轴媒体区。
-- **验证过的示例工作流面板**：新增顶部导航「示例工作流」(`/workflows`)，预置并验证了「短视频动作迁移」、「首尾帧平滑过渡视频」、「人物肖像精准对口型」、「多机位分镜连拍组」等开箱即用的优质拓扑模板，一键即可克隆生成全新画布工程。
-- **纯前端 WebGPU 深度提取能力**：集成 Depth-Anything-V2-Small（Q4F16 量化，仅约 19MB），默认从**魔搭社区 (ModelScope)** 高速下载并持久化至浏览器 CacheStorage 本地缓存，已缓存时实现 0 流量秒级离线加载。
-- **全能 Agent 调度连接器（双引擎联动）**：Codex / ZCode / 任意 MCP 客户端插件全面升级，提供 `canvas`（画布操作）、`timeline-editor`（时间轴视频剪辑）、`creative-studio`（创意全能调度器）三大技能。连接界面提供**一键唤醒安装**与**本仓库源码直链 / GitHub 加速直链**，解脱特定宿主绑定。
-- **长任务双保险轮询机制**：针对长耗时生视频与 APIMart 异步任务，引入前台唤醒（`visibilitychange`）即时状态对齐、15 分钟绝对时间超时与动态自适应轮询间隔，彻底根治浏览器切后台静默超时与节点卡死问题。
-- **内置 AutoDL ComfyUI 工作流节点插件**：内置 [infinite-canvas-plugin-comfyui-autodl](https://github.com/YaoGuaiLi/infinite-canvas-plugin-comfyui-autodl)，直接在画布创建菜单提供「ComfyUI 工作流」节点，开箱即用。
-  - 支持直接调用 AutoDL.Art 平台海量 ComfyUI 官方/自定义工作流（文生图、多图参考、首尾帧控制、对口型、IndexTTS2 语音合成等）。
-  - 动态从 API 拉取工作流表单参数，支持上游连线节点素材与 `@` 标签快速绑定参考槽位。
+### 差异一览
+
+| 维度 | 上游 | 本仓库 |
+|------|------|--------|
+| 视频剪辑 | 无独立剪辑器 | 内置 **Timeline Studio 多轨剪辑器**（`/editor`），支持资产一键导入 |
+| 工作流模板 | 无 | 新增 **示例工作流**（`/workflows`），预置已验证拓扑模板 |
+| 深度提取 | 需外部服务 | **纯前端 WebGPU** 深度推理（Depth-Anything-V2-Small，魔搭下载 + 本地缓存） |
+| Agent 接入 | 仅 Codex 插件说明 | 支持 **Codex / CodeG / 任意 MCP 客户端** 一键唤醒与仓库源码部署 |
+| Agent 技能 | `canvas` 单技能 | 新增 `timeline-editor`、`creative-studio` 双技能 |
+| 长任务轮询 | 固定轮次等待 | **双保险轮询**（前台唤醒 + 绝对超时 + 自适应间隔） |
+| 云同步 | WebDAV | 追加 **GitHub 私有仓库备份** |
+| 模型渠道 | OpenAI / Gemini | 追加 **APIMart** 任务式渠道适配 |
+| 远程图片 | 依赖图床 CORS | 内置 **Edge Function 图片代理**，自动绕过 CORS 与临时外链过期 |
+| 上游自动同步 | — | **已移除**每小时自动合并上游的 workflow，改由人工按需同步 |
+| 文档 | 含 API 赞助推广 | 移除推广内容，仅注入访问统计代码 |
+
+### 功能详情
+
+- **内置 Timeline Studio AI 视频多轨剪辑器**：新增独立页面入口 `/editor`（顶部导航栏「AI 剪辑」），开箱集成基于 WebGPU + WASM FFmpeg 的多轨时间轴剪辑、自动字幕、AI 配音与画中画合成，支持全屏与多主题自适应，配置 Vercel COOP/COEP 安全响应头支持多线程音视频渲染。剪辑器顶栏提供**资产一键导入**，可直接将「我的资产」与「画布项目」中的图片、视频、音频送入时间轴媒体区。
+- **验证过的示例工作流面板**：新增顶部导航「示例工作流」(`/workflows`)，预置并验证了「短视频动作迁移」、「首尾帧平滑过渡视频」、「人物肖像精准对口型」、「多机位分镜连拍组」等开箱即用的拓扑模板，一键克隆生成全新画布工程。
+- **纯前端 WebGPU 深度提取能力**：集成 Depth-Anything-V2-Small（Q4F16 量化，约 19MB），默认从**魔搭社区 (ModelScope)** 高速下载并持久化至浏览器 CacheStorage，已缓存时 0 流量秒级离线加载，Hugging Face 作为自动回退镜像。
+- **全能 Agent 调度连接器（双引擎联动）**：Agent 插件升级为 `canvas`（画布操作）、`timeline-editor`（时间轴视频剪辑）、`creative-studio`（创意全能调度）三大技能；连接界面提供 **Codex / CodeG / Zed / VSCode 一键唤醒安装**，并给出**本仓库源码直链与 GitHub 加速直链**，不再绑定单一宿主。
+- **长任务双保险轮询机制**：针对长耗时生视频与 APIMart 异步任务，引入前台唤醒（`visibilitychange`）即时状态对齐、15 分钟绝对时间超时与动态自适应轮询间隔，规避浏览器切后台静默超时与节点卡死。
+- **内置 AutoDL ComfyUI 工作流节点插件**：内置 [infinite-canvas-plugin-comfyui-autodl](https://github.com/YaoGuaiLi/infinite-canvas-plugin-comfyui-autodl)，画布创建菜单直接提供「ComfyUI 工作流」节点。
+  - 支持调用 AutoDL.Art 平台 ComfyUI 官方/自定义工作流（文生视频、多图参考、首尾帧控制、对口型、IndexTTS2 语音合成等）。
+  - 动态从 API 拉取工作流表单参数，支持上游连线素材与 `@` 标签绑定参考槽位。
   - 生成结果自动下载并缓存到本地 IndexedDB，避免依赖短期外链。
-  - 源码内置于 `plugins/canvas/comfyui-autodl/`，产物随站点同步打包。
-- **GitHub 仓库云同步备份**：新增「云同步」渠道下拉，可用 GitHub 私有仓库（Contents API）同步画布、我的资产、生成记录和本地媒体文件。在配置弹窗 → 云同步中选择 **GitHub 仓库**，填入 `owner/repo` 和仅授予目标仓库 `Contents: Read and write` 的 Fine-grained PAT 即可；国内网络不稳时可将 API 地址换为自有反代。
+  - 源码内置于 `plugins/canvas/comfyui-autodl/`，产物随站点一同构建分发。
+  - 本地内置插件默认启用，无需手动填写 URL 安装。
+- **GitHub 仓库云同步备份**：配置弹窗 → 云同步新增 **GitHub 仓库** 选项，可用私有仓库（Contents API）同步画布、我的资产、生成记录与本地媒体文件；填入 `owner/repo` 与仅授予目标仓库 `Contents: Read and write` 的 Fine-grained PAT 即可，网络受限时可将 API 地址换为自有反代。
 - **APIMart 渠道原生适配**：渠道编辑器新增 **APIMart** 调用格式（默认 `https://api.apimart.ai/v1`），内置任务式生图 / 生视频适配：参考图自动上传、任务轮询、按模型的尺寸 / 分辨率 / 比例 / 质量参数归一化（gemini-3.1、nano-banana、seedream-5、grok-imagine、imagen-4、flux 等），浏览器直连无需反代。
 - **免 CORS 跨域图片持久化代理**：内置 Vercel Edge Function (`/api/image-proxy`)，自动解决无 CORS 头图床（如 APIMart getapib 等）被浏览器阻止下载的问题，确保远程生成图片能安全拉取并写入本地 IndexedDB，防止临时外链过期导致画布裂图。
-- **纯净无推广**：移除了上游 README 中插入的各类第三方 API 赞助商推广与返利推广链接，保持文档纯净。
-- **访问与分析统计**：在首页注入 Impact 访问分析代码，方便掌控自部署站点的流量与使用情况。
+- **资产卡片高度约束**：修复「我的资产」与画布侧栏中长文本资产无限纵向拉伸的问题，超长文本按行截断并可完整查看详情。
+- **移除上游自动同步**：本项目已删除 `.github/workflows/sync-upstream.yml`，不再每小时自动合并上游（此前的自动合并会因 README / i18n 冲突持续失败并刷失败邮件）；需要跟进上游时按需人工合并。
+- **纯净文档与访问统计**：移除上游 README 中插入的第三方 API 赞助推广与返利链接，仅保留访问分析统计代码。
 
 ## 快速开始
 
@@ -71,7 +91,7 @@ AI API Key、Base URL、画布、素材和生成记录默认保存在浏览器�
 ### 本地开发
 
 ```bash
-git clone git@github.com:basketikun/infinite-canvas.git
+git clone https://github.com/YaoGuaiLi/infinite-canvas.git
 cd infinite-canvas
 cd web
 bun install
@@ -81,7 +101,7 @@ bun run dev
 ### Docker 运行
 
 ```bash
-git clone git@github.com:basketikun/infinite-canvas.git
+git clone https://github.com/YaoGuaiLi/infinite-canvas.git
 cd infinite-canvas
 docker compose up -d
 ```
