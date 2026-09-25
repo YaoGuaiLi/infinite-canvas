@@ -4,11 +4,13 @@ import path from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
 
 import { runClaudeTurn } from "../agent/claude.js";
+import { providerInfo, resolveProvider, runProviderTurn } from "../agent/provider.js";
 import { archiveCodexThread, CodexSkillLookupError, configureCodexSkill, generateCodexSkillDraft, interruptCodexTurn, isRecoverableThreadError, listCodexModels, listCodexSkills, listCodexThreads, readCodexThread, resolveCodexApproval, resolveCodexSkill, resumeCodexThread, runCodexTurn, startCodexThread, summarizeCodexThread } from "../agent/codex.js";
 import type { CodexReasoningEffort, CodexSkillSelector } from "../agent/codex-protocol.js";
 import { messageMetadataStore } from "../agent/message-metadata.js";
 import type { AgentAttachment, AgentPermissionMode } from "../agent/types.js";
 import { AGENT_PROTOCOL_VERSION, CanvasSession } from "../canvas/session.js";
+import { toolNames } from "../canvas/schemas.js";
 import { DEFAULT_PORT, ensureSiteWorkspace, loadConfig, saveConfig, updateSiteWorkspace, type CanvasAgentConfig } from "../config.js";
 import { logger } from "../utils/logger.js";
 import { checkVersions } from "../version-check.js";
@@ -122,6 +124,24 @@ export function startHttpServer() {
     });
     app.get("/health", (_req, res) => res.json(session.health()));
     app.get("/config", (_req, res) => res.json({ ok: true, protocolVersion: AGENT_PROTOCOL_VERSION, url: config.url, hasToken: true }));
+    app.get("/agent/info", (_req, res) => {
+        const provider = resolveProvider(config.provider);
+        res.json({
+            ok: true,
+            protocolVersion: AGENT_PROTOCOL_VERSION,
+            provider: providerInfo(provider),
+            toolNames,
+        });
+    });
+    app.post("/agent/turn", route(async (req, res) => {
+        const provider = resolveProvider(config.provider);
+        const prompt = String(req.body?.prompt || "");
+        if (!prompt.trim()) throw new Error("prompt is required");
+        const attachments = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
+        const permissionMode = String(req.body?.permissionMode || "request");
+        runProviderTurn(provider, prompt, emit, { attachments, permissionMode });
+        res.json({ ok: true, provider: provider.id });
+    }));
     app.use((req, res, next) => {
         if (validToken(req, requestUrl(req, config), config.token)) return next();
         res.status(401).json({ ok: false, error: "invalid token" });

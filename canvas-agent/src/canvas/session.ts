@@ -36,6 +36,13 @@ const SITE_TOOLS = new Set<ToolName>([
     "assets_list",
     "assets_add",
     "generation_get_status",
+    "workflows_apply_template",
+    "editor_import_media",
+    "sync_github_backup",
+    "apimart_generate_video",
+    "apimart_task_status",
+    "depth_model_status",
+    "depth_model_prefetch",
 ]);
 
 /** 管理网页画布连接、状态、附件和工具请求。 */

@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import { App, Button, Input, Tooltip } from "antd";
 import copyToClipboard from "copy-to-clipboard";
 import { BookMarked, Copy, Download, ExternalLink, KeyRound, Link2, PlugZap, Rocket, TerminalSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { canvasThemes } from "@/lib/canvas-theme";
+import { callAgentTool, listAgentTools } from "@/services/api/agent-capabilities";
 
 const REPO_PLUGIN_URL = "https://github.com/YaoGuaiLi/infinite-canvas";
 const REPO_AGENT_URL = "https://github.com/YaoGuaiLi/infinite-canvas/tree/main/canvas-agent";
@@ -224,8 +226,94 @@ export function AgentConnectView({
                             </div>
                         ) : null}
                     </div>
+
+                    {enabled && connected ? (
+                        <LocalCapabilitiesPanel theme={theme} url={url} token={token} />
+                    ) : null}
                 </div>
             </div>
         </div>
+    );
+}
+
+function LocalCapabilitiesPanel({ theme, url, token }: { theme: (typeof canvasThemes)[keyof typeof canvasThemes]; url: string; token: string }) {
+    const { t } = useTranslation();
+    const [tools, setTools] = useState<Array<{ name: string; description: string }>>([]);
+    const [selected, setSelected] = useState<string>("canvas_get_state");
+    const [inputJson, setInputJson] = useState("{}");
+    const [running, setRunning] = useState(false);
+    const [result, setResult] = useState("");
+
+    useEffect(() => {
+        setTools(listAgentTools());
+    }, []);
+
+    const runTool = async () => {
+        setRunning(true);
+        setResult("");
+        try {
+            let input: Record<string, unknown> = {};
+            try {
+                input = JSON.parse(inputJson || "{}") as Record<string, unknown>;
+            } catch {
+                throw new Error(t("agent.capabilities.invalidJson"));
+            }
+            const output = await callAgentTool(url, token, selected, input);
+            setResult(JSON.stringify(output, null, 2));
+        } catch (error) {
+            setResult(error instanceof Error ? error.message : String(error));
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    return (
+        <details className="rounded-lg border px-3 py-2.5" style={{ borderColor: theme.node.stroke }}>
+            <summary className="cursor-pointer select-none text-sm font-medium leading-5" style={{ color: theme.node.text }}>
+                {t("agent.capabilities.title")}
+            </summary>
+            <div className="mt-3 space-y-3">
+                <p className="text-xs leading-5" style={{ color: theme.node.muted }}>
+                    {t("agent.capabilities.description")}
+                </p>
+                <div className="grid gap-1.5 max-h-56 overflow-y-auto thin-scrollbar">
+                    {tools.map((tool) => (
+                        <button
+                            key={tool.name}
+                            type="button"
+                            className={`rounded-md border px-2.5 py-1.5 text-left transition ${selected === tool.name ? "ring-1" : ""}`}
+                            style={{ borderColor: selected === tool.name ? theme.node.activeStroke : theme.node.stroke, color: theme.node.text, background: selected === tool.name ? theme.node.fill : "transparent" }}
+                            onClick={() => {
+                                setSelected(tool.name);
+                                setInputJson("{}");
+                            }}
+                        >
+                            <span className="block font-mono text-[11px] font-semibold">{tool.name}</span>
+                            <span className="block truncate text-[11px]" style={{ color: theme.node.muted }}>
+                                {tool.description}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+                <label className="grid gap-1.5">
+                    <span className="text-xs font-medium" style={{ color: theme.node.muted }}>{t("agent.capabilities.inputLabel")}</span>
+                    <textarea
+                        className="h-24 w-full rounded-md border bg-transparent p-2 font-mono text-[11px] leading-5 thin-scrollbar"
+                        style={{ borderColor: theme.node.stroke, color: theme.node.text }}
+                        value={inputJson}
+                        onChange={(event) => setInputJson(event.target.value)}
+                        spellCheck={false}
+                    />
+                </label>
+                <Button size="small" type="primary" loading={running} onClick={() => void runTool()}>
+                    {t("agent.capabilities.run")}
+                </Button>
+                {result ? (
+                    <pre className="max-h-56 overflow-auto rounded-md border p-2 font-mono text-[11px] leading-5 thin-scrollbar" style={{ borderColor: theme.node.stroke, color: theme.node.text }}>
+                        {result}
+                    </pre>
+                ) : null}
+            </div>
+        </details>
     );
 }

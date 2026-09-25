@@ -11,7 +11,8 @@ export const AGENT_PROMPT = fs.readFileSync(new URL("../agent-instructions.md", 
 const initializedWorkspaces = new Set<string>();
 
 export type SiteWorkspaceConfig = { workspacePath: string; activeThreadId?: string; pinnedThreadIds?: string[] };
-export type CanvasAgentConfig = { url: string; token: string; origins?: string[]; workspace?: SiteWorkspaceConfig };
+export type CanvasAgentProviderConfig = { id: "codex" | "claude" | "custom"; command?: string; args?: string[] };
+export type CanvasAgentConfig = { url: string; token: string; origins?: string[]; workspace?: SiteWorkspaceConfig; provider?: CanvasAgentProviderConfig };
 
 /** 读取本地 Canvas Agent 配置，不存在时生成默认配置。 */
 export function loadConfig(create = false): CanvasAgentConfig {

@@ -134,7 +134,7 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
     // canvasContext is intentionally excluded because project updates it every frame during dragging and resizing.
     // The panel uses it only for ref synchronization and debounced postState calls, never during rendering.
     // Subscribing here would rerender the panel every frame and amplify the #185 crash, so it is observed imperatively below.
-    const { width, url, token, connected, enabled, prompt, attachments, sending, waiting, tokenUsage, eventLogs, threads, activeThreadId, workspacePath, loadingThreads, activeTab, confirmTools, permissionMode, models, model, reasoningEffort, activity, conversation, connectError, pendingTool, pendingApprovals } = useAgentStore(
+    const { width, url, token, connected, enabled, prompt, attachments, sending, waiting, tokenUsage, eventLogs, threads, activeThreadId, workspacePath, loadingThreads, activeTab, confirmTools, permissionMode, models, model, reasoningEffort, activity, conversation, connectError, pendingTool, pendingApprovals, providerId } = useAgentStore(
         useShallow((state) => ({
             width: state.width,
             url: state.url,
@@ -162,6 +162,7 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
             connectError: state.connectError,
             pendingTool: state.pendingTool,
             pendingApprovals: state.pendingApprovals,
+            providerId: state.providerId,
         })),
     );
     const setAgentState = useAgentStore((state) => state.setAgentState);
@@ -372,6 +373,10 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
             }
             const codex = hello?.codex;
             const busy = Boolean(codex?.busy);
+            // 检测 provider 类型（非 codex 时隐藏技能/历史/审批等 Codex 专属 UI）
+            void fetchAgentJson<{ provider?: { id?: string } }>(endpoint, token, "/agent/info")
+                .then((info) => setAgentState({ providerId: info?.provider?.id || "codex" }))
+                .catch(() => setAgentState({ providerId: "codex" }));
             const nextThreadId = hello?.conversation?.threadId ?? hello?.workspace?.activeThreadId ?? useAgentStore.getState().activeThreadId;
             if (hello?.conversation) applyConversationState(hello.conversation, true);
             else applyWorkspaceChange({ activeThreadId: nextThreadId });
@@ -685,25 +690,35 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
             const modelName = models.find((item) => item.model === model)?.displayName || model || rt("defaultModel");
             const effortName = reasoningEffort ? i18n.t(`agent.composer.effort.${reasoningEffort}`) : rt("defaultEffort");
             addEventLog(rt("sendTask"), `${modelName} · ${effortName}${selectedSkill ? ` · Skill ${selectedSkill.name}` : ""}${files.length ? ` · ${rt("attachmentCount", { count: files.length })}` : ""}${canvasReferences.length ? ` · ${rt("canvasReferenceCount", { count: canvasReferences.length })}` : ""} · ${compactText(text) || rt(canvasReferences.length ? "canvasReferencesOnly" : "attachmentsOnly")}`);
-            const accepted = await fetchAgentJson<AgentTurnResponse>(endpoint, token, "/agent/codex/turn", {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    prompt: requestPrompt,
-                    messageText: userText,
-                    messageId,
-                    clientId: clientIdRef.current,
-                    threadId,
-                    conversationId: currentBeforeSend.conversation.conversationId,
-                    expectedRevision: currentBeforeSend.conversation.revision,
-                    permissionMode,
-                    model,
-                    effort: reasoningEffort,
-                    skill: selectedSkill ? { name: selectedSkill.name, path: selectedSkill.path } : undefined,
-                    attachments: requestFiles.map(({ id, name, type, size, width, height, dataUrl }) => ({ id, name, type, size, width, height, dataUrl })),
-                    messageMetadata,
-                }),
-            });
+            const isCodex = useAgentStore.getState().providerId === "codex";
+            const accepted = isCodex
+                ? await fetchAgentJson<AgentTurnResponse>(endpoint, token, "/agent/codex/turn", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                        prompt: requestPrompt,
+                        messageText: userText,
+                        messageId,
+                        clientId: clientIdRef.current,
+                        threadId,
+                        conversationId: currentBeforeSend.conversation.conversationId,
+                        expectedRevision: currentBeforeSend.conversation.revision,
+                        permissionMode,
+                        model,
+                        effort: reasoningEffort,
+                        skill: selectedSkill ? { name: selectedSkill.name, path: selectedSkill.path } : undefined,
+                        attachments: requestFiles.map(({ id, name, type, size, width, height, dataUrl }) => ({ id, name, type, size, width, height, dataUrl })),
+                        messageMetadata,
+                    }),
+                })
+                : await fetchAgentJson<{ threadId?: string; provider?: string }>(endpoint, token, "/agent/turn", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                        prompt: requestPrompt,
+                        attachments: requestFiles.map(({ id, name, type, size, width, height, dataUrl }) => ({ id, name, type, size, width, height, dataUrl })),
+                    }),
+                });
             threadId = accepted.threadId || threadId;
             if (!threadId) throw new Error(rt("startConversationFailed"));
             if (selectedSkill) clearSkillSelection(selectedSkillRevision);
@@ -1335,8 +1350,8 @@ export function LocalAgentPanel({ embedded, headless, autoConnect }: { embedded?
                 }
                 items={[
                     { value: "chat", label: t("agent.panel.chat"), icon: <MessageSquare className="size-3.5" /> },
-                    { value: "history", label: t("agent.panel.history"), icon: <History className="size-3.5" />, count: threads.length },
-                    { value: "skills", label: t("agent.panel.skills"), icon: <Sparkles className="size-3.5" />, count: skillCount },
+                    ...(providerId === "codex" ? [{ value: "history" as const, label: t("agent.panel.history"), icon: <History className="size-3.5" />, count: threads.length }] : []),
+                    ...(providerId === "codex" ? [{ value: "skills" as const, label: t("agent.panel.skills"), icon: <Sparkles className="size-3.5" />, count: skillCount }] : []),
                     { value: "log", label: t("agent.panel.logs"), icon: <Terminal className="size-3.5" />, count: eventLogs.length },
                 ]}
                 onChange={(activeTab) => {

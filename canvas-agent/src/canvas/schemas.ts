@@ -42,6 +42,13 @@ export const toolNames = [
     "prompts_search",
     "assets_list",
     "assets_add",
+    "workflows_apply_template",
+    "editor_import_media",
+    "sync_github_backup",
+    "apimart_generate_video",
+    "apimart_task_status",
+    "depth_model_status",
+    "depth_model_prefetch",
 ] as const;
 export type ToolName = (typeof toolNames)[number];
 
@@ -124,6 +131,13 @@ export const toolInputSchemas = {
     prompts_search: z.object({ keyword: z.string().optional(), category: z.string().optional(), tags: z.array(z.string()).optional(), page: z.number().optional(), pageSize: z.number().optional() }),
     assets_list: z.object({ kind: z.enum(["all", "text", "image", "video"]).optional(), keyword: z.string().optional(), page: z.number().optional(), pageSize: z.number().optional() }),
     assets_add: z.object({ kind: z.enum(["text", "image"]), title: z.string(), content: z.string().optional(), imageUrl: z.string().optional(), tags: z.array(z.string()).optional(), source: z.string().optional(), note: z.string().optional() }),
+    workflows_apply_template: z.object({ template: z.enum(["motion-transfer", "first-last-frame", "lip-sync", "storyboard-serial"]) }),
+    editor_import_media: z.object({ sources: z.array(z.enum(["assets", "canvas"])).optional(), project_id: z.string().optional(), limit: z.number().optional() }),
+    sync_github_backup: z.object({ include_assets: z.boolean().optional() }),
+    apimart_generate_video: z.object({ prompt: z.string(), model: z.string().optional(), seconds: z.string().optional(), size: z.string().optional(), resolution: z.string().optional(), generateAudio: z.boolean().optional() }),
+    apimart_task_status: z.object({ task_id: z.string() }),
+    depth_model_status: z.object({ prefetch: z.boolean().optional() }),
+    depth_model_prefetch: z.object({}).passthrough(),
 } satisfies Record<ToolName, z.AnyZodObject>;
 
 export const toolDescriptions: Record<ToolName, string> = {
@@ -161,4 +175,11 @@ export const toolDescriptions: Record<ToolName, string> = {
     prompts_search: "搜索提示词库（第三方提示词合集），支持 keyword、category、tags 过滤和 page/pageSize 分页，返回标题、提示词、分类、标签、封面等。",
     assets_list: "列出用户「我的素材」，支持 kind（text/image/video）过滤、keyword 搜索和 page/pageSize 分页。为控制体积不返回图片/视频原始 data，仅返回封面与元信息。",
     assets_add: "向「我的素材」新增素材。kind=text 时用 content 传文本内容；kind=image 时用 imageUrl 传图片地址或 dataURL。可附带 title、tags、source、note。",
+    workflows_apply_template: "用仓库预置并验证过的画布工作流模板一键创建新画布工程。template 可选 motion-transfer（动作迁移）、first-last-frame（首尾帧过渡）、lip-sync（对口型）、storyboard-serial（多机位分镜）。自动创建节点与连线并跳转到新画布。",
+    editor_import_media: "把「我的资产」和/或画布项目中的图片、视频、音频素材导入 Timeline Studio 时间轴剪辑器（/editor）。sources 指定来源（默认 assets+canvas），project_id 指定画布项目，limit 限制数量。要求剪辑器页面已打开；若未打开先用 site_navigate 跳转 /editor。",
+    sync_github_backup: "把当前画布工程（可选含我的素材）序列化后备份到用户配置的 GitHub 私有仓库。需要用户已在配置中填写 GitHub 仓库与 Fine-grained PAT。",
+    apimart_generate_video: "用已配置的 APIMart 渠道提交异步视频生成任务，立即返回 taskId（不等结果），可用 apimart_task_status 查询进度。支持 model（seedance/kling/minimax/veo/sora 等）、seconds、size、resolution、generateAudio。",
+    apimart_task_status: "查询 APIMart 异步任务状态。返回 status（processing/completed/failed）、progress 与结果 URL。",
+    depth_model_status: "查询深度提取模型（Depth-Anything-V2-Small Q4F16）状态：WebGPU 可用性、是否已缓存到本地。prefetch=true 时未缓存则后台从魔搭社区下载并持久化。",
+    depth_model_prefetch: "立即后台下载 Depth-Anything-V2-Small 模型权重到浏览器本地缓存（优先魔搭社区镜像），适合在用户空闲时预热。",
 };

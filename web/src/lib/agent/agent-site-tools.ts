@@ -7,9 +7,16 @@ import { imageAspectOptions, imageQualityOptions, imageScaleOptions } from "@/co
 import { videoResolutionOptions, videoSecondsRange, videoSizeOptions } from "@/components/video-settings-panel";
 import type { CanvasAgentSnapshot } from "@/lib/canvas/canvas-agent-ops";
 import { clampVideoSeconds } from "@/lib/media-size";
+import { buildTemplateProject, findWorkflowTemplate } from "@/lib/canvas/workflow-templates";
+import { getMediaBlob, uploadMediaFile } from "@/services/file-storage";
+import { getImageBlob } from "@/services/image-storage";
+import { checkWebGPUAvailability, getOrFetchDepthModel, isDepthModelCached } from "@/services/depth-webgpu";
+import { createApimartVideoTask, pollApimartVideoTask } from "@/services/api/apimart";
+import { uploadGithubFile } from "@/services/github-sync";
+import { resilientDelay } from "@/lib/polling-guard";
 import { useCanvasStore } from "@/stores/canvas/use-canvas-store";
 import { useAssetStore } from "@/stores/use-asset-store";
-import { modelOptionLabel, modelOptionName, normalizeModelOptionValue, selectableModelsByCapability, useConfigStore } from "@/stores/use-config-store";
+import { modelOptionLabel, modelOptionName, normalizeModelOptionValue, selectableModelsByCapability, useConfigStore, type AiConfig } from "@/stores/use-config-store";
 import { useWorkbenchAgentStore } from "@/stores/use-workbench-agent-store";
 
 // Execute site-level Agent tools in the browser, including canvas lists, workbench generation, prompt search, and asset operations.
@@ -25,6 +32,13 @@ export const SITE_TOOL_NAMES = [
     "prompts_search",
     "assets_list",
     "assets_add",
+    "workflows_apply_template",
+    "editor_import_media",
+    "sync_github_backup",
+    "apimart_generate_video",
+    "apimart_task_status",
+    "depth_model_status",
+    "depth_model_prefetch",
 ] as const;
 
 export type SiteToolName = (typeof SITE_TOOL_NAMES)[number];
@@ -47,6 +61,13 @@ export const SITE_TOOL_LABELS: Record<SiteToolName, string> = {
     get prompts_search() { return siteText("promptSearch"); },
     get assets_list() { return siteText("assetList"); },
     get assets_add() { return siteText("assetAdd"); },
+    get workflows_apply_template() { return siteText("workflowsApplyTemplate"); },
+    get editor_import_media() { return siteText("editorImportMedia"); },
+    get sync_github_backup() { return siteText("syncGithubBackup"); },
+    get apimart_generate_video() { return siteText("apimartGenerateVideo"); },
+    get apimart_task_status() { return siteText("apimartTaskStatus"); },
+    get depth_model_status() { return siteText("depthModelStatus"); },
+    get depth_model_prefetch() { return siteText("depthModelPrefetch"); },
 };
 
 type SiteToolInput = Record<string, unknown>;
@@ -74,6 +95,20 @@ export async function runSiteTool(name: SiteToolName, input: SiteToolInput, navi
             return listAssets(input);
         case "assets_add":
             return addAsset(input);
+        case "workflows_apply_template":
+            return applyWorkflowTemplate(input, navigate);
+        case "editor_import_media":
+            return importEditorMedia(input, navigate);
+        case "sync_github_backup":
+            return runGithubBackup(input);
+        case "apimart_generate_video":
+            return startApimartVideo(input);
+        case "apimart_task_status":
+            return getApimartTaskStatus(input);
+        case "depth_model_status":
+            return getDepthStatus(input);
+        case "depth_model_prefetch":
+            return prefetchDepthModel();
         default:
             throw new Error(siteText("unknownTool", { name }));
     }
@@ -328,4 +363,240 @@ function paginate(input: SiteToolInput, total: number, defaultSize: number) {
     const page = Math.min(maxPage, Math.max(1, Math.floor(Number(input.page)) || 1));
     const start = (page - 1) * pageSize;
     return { page, pageSize, start, end: start + pageSize };
+}
+
+// ---------------------------------------------------------------------------
+// Fork 扩展：工作流模板 / 时间轴素材导入 / GitHub 备份 / APIMart 视频任务 / WebGPU 深度模型
+// ---------------------------------------------------------------------------
+
+function applyWorkflowTemplate(input: SiteToolInput, navigate: NavigateFunction) {
+    const slug = String(input.template || "");
+    const template = findWorkflowTemplate(slug);
+    if (!template) throw new Error(siteText("unknownWorkflowTemplate"));
+    const store = useCanvasStore.getState();
+    if (!store.hydrated) throw new Error(siteText("canvasLoading"));
+    const title = i18n.t(template.titleKey);
+    const projectId = store.createProject(title);
+    const { nodes, connections } = buildTemplateProject(template);
+    store.updateProject(projectId, { nodes, connections });
+    navigate(`/canvas/${projectId}`);
+    return { ok: true, projectId, template: slug, nodeCount: nodes.length, connectionCount: connections.length };
+}
+
+async function waitForEditorFrame(timeoutMs = 15000): Promise<HTMLIFrameElement> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+        const frame = Array.from(document.querySelectorAll("iframe")).find((item) => (item.getAttribute("src") || "").includes("/editor/"));
+        if (frame) return frame;
+        await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    throw new Error(siteText("editorNotOpen"));
+}
+
+async function importEditorMedia(input: SiteToolInput, navigate: NavigateFunction) {
+    const sources = Array.isArray(input.sources) && input.sources.length ? input.sources : ["assets", "canvas"];
+    const wantAssets = sources.includes("assets");
+    const wantCanvas = sources.includes("canvas");
+    const projectId = typeof input.project_id === "string" ? input.project_id : "";
+    const limit = Math.max(1, Math.min(50, Math.floor(Number(input.limit)) || 30));
+    const assets = useAssetStore.getState();
+    const canvas = useCanvasStore.getState();
+    if (assets.hydrated !== undefined && !assets.hydrated) throw new Error(siteText("assetsLoading"));
+
+    type Item = { name: string; mimeType: string; buffer: ArrayBuffer };
+    const items: Item[] = [];
+
+    const pushItem = async (name: string, kind: "image" | "video" | "audio", storageKey?: string, fallbackUrl?: string) => {
+        if (items.length >= limit) return;
+        try {
+            let blob: Blob | null = null;
+            if (storageKey) blob = kind === "image" ? await getImageBlob(storageKey) : await getMediaBlob(storageKey);
+            if (!blob && fallbackUrl) {
+                const res = await fetch(fallbackUrl);
+                blob = await res.blob();
+            }
+            if (!blob) return;
+            const ext = kind === "video" ? "mp4" : kind === "audio" ? "mp3" : "png";
+            items.push({
+                name: name.includes(".") ? name : `${name || "asset"}.${ext}`,
+                mimeType: blob.type || (kind === "video" ? "video/mp4" : kind === "audio" ? "audio/mpeg" : "image/png"),
+                buffer: await blob.arrayBuffer(),
+            });
+        } catch (err) {
+            console.error("[site-tools] editor media collect failed:", name, err);
+        }
+    };
+
+    if (wantAssets) {
+        for (const asset of assets.assets) {
+            if (items.length >= limit) break;
+            if (asset.kind !== "image" && asset.kind !== "video") continue;
+            await pushItem(asset.title || asset.id, asset.kind, asset.kind === "image" ? asset.data.storageKey : asset.data.storageKey, asset.kind === "video" ? asset.data.url : asset.data.dataUrl);
+        }
+    }
+    if (wantCanvas) {
+        const project = projectId ? canvas.projects.find((p) => p.id === projectId) : canvas.projects[0];
+        for (const node of project?.nodes || []) {
+            if (items.length >= limit) break;
+            const images = node.metadata?.images || [];
+            const primary = images.find((img) => img.id === (node.metadata?.primaryImageId || images[0]?.id)) || images[0];
+            const kind = node.type === "image" ? "image" : node.type === "video" ? "video" : node.type === "audio" ? "audio" : null;
+            if (!kind) continue;
+            const storageKey = primary?.storageKey || node.metadata?.storageKey;
+            const content = primary?.content || node.metadata?.content || "";
+            if (!storageKey && !content) continue;
+            await pushItem(node.title || node.id, kind, storageKey, content);
+        }
+    }
+
+    if (!items.length) throw new Error(siteText("editorNoMedia"));
+
+    // 确保剪辑器页面已打开
+    if (!window.location.pathname.startsWith("/editor")) {
+        navigate("/editor");
+        await waitForEditorFrame();
+    }
+    const frame = await waitForEditorFrame();
+
+    const imported: Promise<number> = new Promise((resolve, reject) => {
+        const onMessage = (event: MessageEvent) => {
+            if (event.source !== frame.contentWindow) return;
+            if (event.data?.type === "TIMELINE_IMPORT_SUCCESS") {
+                window.removeEventListener("message", onMessage);
+                resolve(Number(event.data.count) || items.length);
+            }
+            if (event.data?.type === "TIMELINE_IMPORT_ERROR") {
+                window.removeEventListener("message", onMessage);
+                reject(new Error(event.data.message || "editor import failed"));
+            }
+        };
+        window.addEventListener("message", onMessage);
+        setTimeout(() => {
+            window.removeEventListener("message", onMessage);
+            reject(new Error(siteText("editorImportTimeout")));
+        }, 20000);
+        frame.contentWindow?.postMessage({ type: "TIMELINE_IMPORT_MEDIA", items }, "*", items.map((item) => item.buffer));
+    });
+
+    const count = await imported;
+    return { ok: true, imported: count };
+}
+
+function getGithubSyncConfig() {
+    const { github, syncProvider } = useConfigStore.getState();
+    if (syncProvider !== "github") throw new Error(siteText("githubProviderRequired"));
+    if (!github.repo.trim() || !github.pat.trim()) throw new Error(siteText("githubConfigRequired"));
+    return github;
+}
+
+async function runGithubBackup(input: SiteToolInput) {
+    const github = getGithubSyncConfig();
+    const includeAssets = input.include_assets !== false;
+    const { projects, hydrated } = useCanvasStore.getState();
+    const { assets } = useAssetStore.getState();
+    if (!hydrated) throw new Error(siteText("assetsLoading"));
+
+    const uploaded: string[] = [];
+    const directory = github.directory.trim() || "infinite-canvas";
+    const projectsPayload = new Blob([JSON.stringify({ app: "infinite-canvas", version: 1, exportedAt: new Date().toISOString(), projects }, null, 2)], { type: "application/json" });
+    await uploadGithubFile(github, `${directory}/backup/projects.json`, projectsPayload, "application/json");
+    uploaded.push(`${directory}/backup/projects.json`);
+
+    if (includeAssets) {
+        const assetsPayload = new Blob([JSON.stringify({ app: "infinite-canvas", version: 1, exportedAt: new Date().toISOString(), assets }, null, 2)], { type: "application/json" });
+        await uploadGithubFile(github, `${directory}/backup/assets.json`, assetsPayload, "application/json");
+        uploaded.push(`${directory}/backup/assets.json`);
+    }
+
+    void useConfigStore.getState().updateGithubConfig?.("lastSyncedAt", new Date().toISOString());
+    return { ok: true, uploaded };
+}
+
+function resolveApimartConfig(model?: string) {
+    const { config } = useConfigStore.getState();
+    const channel = config.channels.find((item) => item.apiFormat === "apimart");
+    const requested = typeof model === "string" && model.trim() ? model : config.videoModel || config.model || "";
+    const decoded = requested.includes("::") ? requested.split("::").slice(1).join("::") : requested;
+    const owningChannel = requested.includes("::") ? config.channels.find((item) => requested.startsWith(`${item.id}::`)) : undefined;
+    const active = owningChannel && owningChannel.apiFormat === "apimart" ? owningChannel : channel;
+    if (!active || active.apiFormat !== "apimart") throw new Error(siteText("apimartChannelRequired"));
+    return { config: { baseUrl: active.baseUrl, apiKey: active.apiKey } as AiConfig, model: decoded };
+}
+
+type ApimartBackgroundTask = { taskId: string; model: string; prompt: string; startedAt: number; status: "processing" | "completed" | "failed"; progress: number; url?: string; storageKey?: string; assetId?: string; error?: string };
+const apimartBackgroundTasks = new Map<string, ApimartBackgroundTask>();
+
+async function startApimartVideo(input: SiteToolInput) {
+    const prompt = String(input.prompt || "").trim();
+    if (!prompt) throw new Error(siteText("videoPromptRequired"));
+    const { config, model } = resolveApimartConfig(typeof input.model === "string" ? input.model : undefined);
+    const seconds = Number(clampVideoSeconds(String(input.seconds ?? "6")));
+    const size = typeof input.size === "string" && input.size.trim() ? input.size : undefined;
+    const resolution = typeof input.resolution === "string" && input.resolution.trim() ? input.resolution : undefined;
+    const generateAudio = typeof input.generateAudio === "boolean" ? input.generateAudio : undefined;
+
+    const taskId = await createApimartVideoTask(config as AiConfig, model, prompt, { seconds, size, resolution, generateAudio });
+    const record: ApimartBackgroundTask = { taskId, model, prompt, startedAt: Date.now(), status: "processing", progress: 0 };
+    apimartBackgroundTasks.set(taskId, record);
+
+    // 后台轮询到终态：结果视频转存本地并写入「我的资产」，避免临时外链过期
+    void (async () => {
+        try {
+            for (;;) {
+                const state = await pollApimartVideoTask(config as AiConfig, taskId);
+                if (state.status === "completed" && state.url) {
+                    const stored = await uploadMediaFile(state.url, "video");
+                    const assetStore = useAssetStore.getState();
+                    const assetId = assetStore.addAsset({
+                        kind: "video",
+                        title: `APIMart ${model} ${new Date().toLocaleString()}`,
+                        coverUrl: "",
+                        tags: ["apimart", "agent"],
+                        source: "APIMart",
+                        note: prompt.slice(0, 200),
+                        data: { url: stored.url, storageKey: stored.storageKey, width: stored.width || 1280, height: stored.height || 720, bytes: stored.bytes, mimeType: stored.mimeType },
+                    });
+                    Object.assign(record, { status: "completed", progress: 100, url: stored.url, storageKey: stored.storageKey, assetId });
+                    break;
+                }
+                if (state.status === "failed") {
+                    Object.assign(record, { status: "failed", error: state.error });
+                    break;
+                }
+                await resilientDelay(3000);
+            }
+        } catch (error) {
+            Object.assign(record, { status: "failed", error: error instanceof Error ? error.message : String(error) });
+        }
+    })().catch((error) => console.error("[site-tools] apimart background crashed:", error));
+
+    return { ok: true, taskId, status: "started", pollWith: "apimart_task_status" };
+}
+
+function getApimartTaskStatus(input: SiteToolInput) {
+    const taskId = String(input.task_id || input.taskId || "");
+    const record = apimartBackgroundTasks.get(taskId);
+    if (!record) throw new Error(siteText("apimartTaskNotFound"));
+    const { taskId: _omit, ...rest } = record;
+    return { taskId: record.taskId, ...rest };
+}
+
+async function getDepthStatus(input: SiteToolInput) {
+    const webgpu = await checkWebGPUAvailability();
+    const cached = await isDepthModelCached();
+    let prefetchStarted = false;
+    if (input.prefetch === true && !cached && webgpu.supported) {
+        prefetchStarted = true;
+        void getOrFetchDepthModel().catch((error) => console.error("[site-tools] depth prefetch failed:", error));
+    }
+    return { webgpu: webgpu.supported, adapterName: webgpu.adapterName, webgpuReason: webgpu.reason, cached, prefetchStarted };
+}
+
+async function prefetchDepthModel() {
+    const webgpu = await checkWebGPUAvailability();
+    if (!webgpu.supported) throw new Error(webgpu.reason || "WebGPU unavailable");
+    const cached = await isDepthModelCached();
+    if (cached) return { ok: true, cached: true, started: false };
+    void getOrFetchDepthModel().catch((error) => console.error("[site-tools] depth prefetch failed:", error));
+    return { ok: true, cached: false, started: true };
 }
