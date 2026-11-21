@@ -29,6 +29,88 @@
 >
 > 如果你需要稳定维护自己的分支，建议自行 fork 后独立开发。二次开发与 PR 请保留原作者信息和前端页面标识。
 
+## 赞助商
+
+<table>
+  <tr>
+    <td width="190" align="center">
+      <a href="https://kunrouai.com/?utm_source=infinite-canvas" target="_blank" rel="noopener noreferrer"><img src="assets/kunrouai.svg" width="163" alt="坤肉AI"></a>
+    </td>
+    <td>
+      <a href="https://kunrouai.com/?utm_source=infinite-canvas" target="_blank" rel="noopener noreferrer">坤肉AI</a> 是一站式 AI 视觉创作平台，集 AI 生图、视频生成、多人协作画布及 Agent/MCP 连接于一体，适合个人创作与团队协作，同时面向企业提供源码出售及私有化部署服务，欢迎企业咨询合作！另有 <a href="https://api.kunrouai.com/?utm_source=infinite-canvas" target="_blank" rel="noopener noreferrer">API 开放平台</a>，提供丰富的 AI 模型 API 接口，支持快速接入与集成，欢迎开发者及企业对接合作！
+    </td>
+  </tr>
+  <tr>
+    <td width="190" align="center">
+      <a href="https://go.apimart.ai/gh-infinite-canvas" target="_blank" rel="noopener noreferrer"><img src="assets/apimart.png" width="163" alt="APIMart"></a>
+    </td>
+    <td>
+      感谢 <strong><a href="https://go.apimart.ai/gh-infinite-canvas" target="_blank" rel="noopener noreferrer">APIMart</a></strong> 赞助了本项目！<strong><a href="https://go.apimart.ai/gh-infinite-canvas" target="_blank" rel="noopener noreferrer">APIMart</a></strong> 是专注 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低至 <strong>$0.006/张</strong>，<strong>1 美元</strong>可出图 <strong>160+ 张</strong>。图片、视频一套异步 API 通吃，提交任务拿 ID、回调取结果，跑批万张不超时、换模型不改代码。按量付费、无月费，通过 <strong><a href="https://go.apimart.ai/gh-infinite-canvas" target="_blank" rel="noopener noreferrer">此注册链接</a></strong> 注册即可开用。
+    </td>
+  </tr>
+  <tr>
+    <td width="190" align="center">
+      <a href="https://www.atlascloud.ai/zh?utm_source=github&utm_medium=link&utm_campaign=infinite-canvas" target="_blank" rel="noopener noreferrer"><img src="assets/atlascloud.svg" width="163" alt="Atlas Cloud"></a>
+    </td>
+    <td>
+      <a href="https://www.atlascloud.ai/zh?utm_source=github&utm_medium=link&utm_campaign=infinite-canvas" target="_blank" rel="noopener noreferrer">Atlas Cloud</a> is a full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Instead of managing multiple vendor integrations, you connect once and get unified access to 300+ curated models across all modalities. Check out <a href="https://www.atlascloud.ai/console/coding-plan" target="_blank" rel="noopener noreferrer">Atlas Cloud's new coding plan promotion</a> for more budget-friendly API access.
+    </td>
+  </tr>
+  <tr>
+    <td width="190" align="center">
+      <a href="https://metaso.cn/minimax-h3/?s=inf" target="_blank" rel="noopener noreferrer"><img src="assets/metaso.jpg" width="163" alt="秘塔科技"></a>
+    </td>
+    <td>
+      <strong>MiniMax H3 视频生成 API｜秘塔科技</strong> 秘塔科技提供高性价比的 MiniMax H3 视频生成服务：<strong>768P 仅 0.09 元/秒，2K 仅 0.15 元/秒</strong>。支持原生 2K、音画同步，API 兼容 <strong>OpenAI 协议</strong>，同时支持 <strong>ComfyUI</strong>，无需自行部署 GPU。 🎁 通过 <a href="https://metaso.cn/minimax-h3/?s=inf" target="_blank" rel="noopener noreferrer">无限画布专属链接注册</a>，即可领取赠送额度及专属优惠。
+    </td>
+  </tr>
+  <tr>
+    <td width="190" align="center">
+      <a href="https://88api.ai/sign-up?aff=zbs9" target="_blank" rel="noopener noreferrer"><img src="assets/88api.png" height="80" alt="88API"></a>
+    </td>
+    <td>
+      <strong>88API｜无限画布 深度优化分支</strong>
+      让主流模型能力结合得更紧密，内置海量提示词、满参满血！
+      🎨&nbsp;支持 GPT-Image、Gemini、Grok 等图片模型；原生 124K 全部同价！
+      🎬&nbsp;支持 Seedance、H3、Kling、Wan、Grok、Veo、omni 等视频模型；
+      🎙️&nbsp;支持 Whisper、TTS、STT 等语音能力。
+      从文案、出图、改图，到视频生成与配音，一张画布串联完整创作链路。不只是模型聚合，更让不同模型在同一工作流中真正协同。👉&nbsp;立即体验 🎁&nbsp;通过 <a href="https://88api.ai/sign-up?aff=zbs9" target="_blank" rel="noopener noreferrer">无限画布专属链接注册</a>，即可赠送额度及专属优惠。
+    </td>
+  </tr>
+  <tr>
+    <td width="190" align="center">
+      <a href="https://www.infistar.cc/register?aff=4X3V9NA9&ref_source=link" target="_blank" rel="noopener noreferrer"><img src="assets/infistar.png" width="163" alt="Infistar.ai 无限星河"></a>
+    </td>
+    <td>
+      <strong>无限画布 × Infistar.ai 无限星河｜内置原生画布 · 全能多模态 API</strong> 💡 原生集成，即点即用： Infistar.ai 已原生上架无限画布！同时提供低至官方 1 折的稳定 API 中转服务，模型倍率与调用明细全程透明。 🎨 多模态生图/生视频： 完美适配 Seedance、FLUX、Midjourney、Sora、Runway、Luma、可灵（Kling）等顶级图片与视频大模型。 🧠 全系语言模型： 覆盖 OpenAI、Claude、Gemini、Grok、DeepSeek、Qwen、GLM 等国内外主流模型，兼容 OpenAI 标准接口。 ⚡ 动态调度： 多路供应保障高可用，拒绝断连。 🎁 专属福利： 通过 <a href="https://infistar.ai/register?aff=4X3V9NA9&ref_source=link" target="_blank" rel="noopener noreferrer">专属链接</a> 注册，立享赠送额度/专属折扣/首充权益！
+    </td>
+  </tr>
+  <tr>
+    <td width="190" align="center">
+      <a href="https://www.packyapi.com/register?aff=34VV" target="_blank" rel="noopener noreferrer"><img src="assets/packycode.png" width="163" alt="PackyCode"></a>
+    </td>
+    <td>
+      <strong>无限画布 × PackyCode｜稳定高效的 API 中转服务商</strong>
+      💡&nbsp;PackyCode 是一家稳定、高效的 API 中转服务商，提供 Claude Code、Codex、Gemini 等多种中转服务，让 AI 编程成为真正的生产力工具。
+      ⚡&nbsp;稳定高效： 具备自动故障转移、智能路由和无限并发等多种功能，保障调用稳定可靠。
+      🎁&nbsp;专属福利： 通过 <a href="https://www.packyapi.com/register?aff=34VV" target="_blank" rel="noopener noreferrer">专属链接</a> 注册，立即开始使用！
+    </td>
+  </tr>
+  <tr>
+    <td width="190" align="center">
+      <a href="https://heyroute.ai/basketikun" target="_blank" rel="noopener noreferrer"><img src="assets/heyroute.svg" width="163" alt="HeyRoute"></a>
+    </td>
+    <td>
+      <strong>无限画布 × HeyRoute｜全能多模态 API 服务商</strong>
+      💡&nbsp;HeyRoute 深度接入无限画布，将创意构思、图片生成、视频制作与内容开发融为一体，让每个灵感都能快速落地。
+      🎨&nbsp;多模态创作能力： 支持 AI 生图、生视频、图像编辑及内容生成，兼容 Seedance、MiniMax-H3、Image-2、Grok Video、Flux Klein、Gemini 等主流模型。
+      🧠&nbsp;丰富模型生态： 覆盖 OpenAI、Claude、Gemini、Grok、DeepSeek、Qwen、GLM 等语言模型，并兼容 OpenAI 标准接口。
+      ⚡&nbsp;稳定高效调用： 支持多模型、多线路灵活调度，调用记录清晰透明，满足日常创作、应用开发与批量生产需求。
+      🎁&nbsp;专属福利： 通过 <a href="https://heyroute.ai/basketikun">专属链接</a> 注册，即可领取新用户 15 美元试用额度！
+    </td>
+  </tr>
+</table>
+
 ## 核心功能
 
 - 无限画布：多画布项目、节点拖拽缩放、连线、小地图、撤销重做、导入导出。
@@ -44,46 +126,6 @@
 
 如果你在为担心没有合适的生图API来发愁，可以查看该免费生图项目：[chatgpt2api](https://github.com/basketikun/chatgpt2api)
 
-## 与上游的差异（Fork 增强功能）
-
-本仓库（[YaoGuaiLi/infinite-canvas](https://github.com/YaoGuaiLi/infinite-canvas)）基于上游 [basketikun/infinite-canvas](https://github.com/basketikun/infinite-canvas) 开发，在保持上游功能对齐的同时，额外集成与优化了下列能力。
-
-### 差异一览
-
-| 维度 | 上游 | 本仓库 |
-|------|------|--------|
-| 视频剪辑 | 无独立剪辑器 | 内置 **Timeline Studio 多轨剪辑器**（`/editor`），支持资产一键导入 |
-| 工作流模板 | 无 | 新增 **示例工作流**（`/workflows`），预置已验证拓扑模板 |
-| 深度提取 | 需外部服务 | **纯前端 WebGPU** 深度推理（Depth-Anything-V2-Small，魔搭下载 + 本地缓存） |
-| Agent 接入 | 仅 Codex 插件说明 | 支持 **Codex / CodeG / 任意 MCP 客户端** 一键唤醒与仓库源码部署 |
-| Agent 技能 | `canvas` 单技能 | 新增 `timeline-editor`、`creative-studio` 双技能 |
-| 长任务轮询 | 固定轮次等待 | **双保险轮询**（前台唤醒 + 绝对超时 + 自适应间隔） |
-| 云同步 | WebDAV | 追加 **GitHub 私有仓库备份** |
-| 模型渠道 | OpenAI / Gemini | 追加 **APIMart** 任务式渠道适配 |
-| 远程图片 | 依赖图床 CORS | 内置 **Edge Function 图片代理**，自动绕过 CORS 与临时外链过期 |
-| 上游自动同步 | — | **已移除**每小时自动合并上游的 workflow，改由人工按需同步 |
-| 文档 | 含 API 赞助推广 | 移除推广内容，仅注入访问统计代码 |
-
-### 功能详情
-
-- **内置 Timeline Studio AI 视频多轨剪辑器**：新增独立页面入口 `/editor`（顶部导航栏「AI 剪辑」），开箱集成基于 WebGPU + WASM FFmpeg 的多轨时间轴剪辑、自动字幕、AI 配音与画中画合成，支持全屏与多主题自适应，配置 Vercel COOP/COEP 安全响应头支持多线程音视频渲染。剪辑器顶栏提供**资产一键导入**，可直接将「我的资产」与「画布项目」中的图片、视频、音频送入时间轴媒体区。
-- **验证过的示例工作流面板**：新增顶部导航「示例工作流」(`/workflows`)，预置并验证了「短视频动作迁移」、「首尾帧平滑过渡视频」、「人物肖像精准对口型」、「多机位分镜连拍组」等开箱即用的拓扑模板，一键克隆生成全新画布工程。
-- **纯前端 WebGPU 深度提取能力**：集成 Depth-Anything-V2-Small（Q4F16 量化，约 19MB），默认从**魔搭社区 (ModelScope)** 高速下载并持久化至浏览器 CacheStorage，已缓存时 0 流量秒级离线加载，Hugging Face 作为自动回退镜像。
-- **全能 Agent 调度连接器（双引擎联动）**：Agent 插件升级为 `canvas`（画布操作）、`timeline-editor`（时间轴视频剪辑）、`creative-studio`（创意全能调度）三大技能；连接界面提供 **Codex / CodeG / Zed / VSCode 一键唤醒安装**，并给出**本仓库源码直链与 GitHub 加速直链**，不再绑定单一宿主。
-- **长任务双保险轮询机制**：针对长耗时生视频与 APIMart 异步任务，引入前台唤醒（`visibilitychange`）即时状态对齐、15 分钟绝对时间超时与动态自适应轮询间隔，规避浏览器切后台静默超时与节点卡死。
-- **内置 AutoDL ComfyUI 工作流节点插件**：内置 [infinite-canvas-plugin-comfyui-autodl](https://github.com/YaoGuaiLi/infinite-canvas-plugin-comfyui-autodl)，画布创建菜单直接提供「ComfyUI 工作流」节点。
-  - 支持调用 AutoDL.Art 平台 ComfyUI 官方/自定义工作流（文生视频、多图参考、首尾帧控制、对口型、IndexTTS2 语音合成等）。
-  - 动态从 API 拉取工作流表单参数，支持上游连线素材与 `@` 标签绑定参考槽位。
-  - 生成结果自动下载并缓存到本地 IndexedDB，避免依赖短期外链。
-  - 源码内置于 `plugins/canvas/comfyui-autodl/`，产物随站点一同构建分发。
-  - 本地内置插件默认启用，无需手动填写 URL 安装。
-- **GitHub 仓库云同步备份**：配置弹窗 → 云同步新增 **GitHub 仓库** 选项，可用私有仓库（Contents API）同步画布、我的资产、生成记录与本地媒体文件；填入 `owner/repo` 与仅授予目标仓库 `Contents: Read and write` 的 Fine-grained PAT 即可，网络受限时可将 API 地址换为自有反代。
-- **APIMart 渠道原生适配**：渠道编辑器新增 **APIMart** 调用格式（默认 `https://api.apimart.ai/v1`），内置任务式生图 / 生视频适配：参考图自动上传、任务轮询、按模型的尺寸 / 分辨率 / 比例 / 质量参数归一化（gemini-3.1、nano-banana、seedream-5、grok-imagine、imagen-4、flux 等），浏览器直连无需反代。
-- **免 CORS 跨域图片持久化代理**：内置 Vercel Edge Function (`/api/image-proxy`)，自动解决无 CORS 头图床（如 APIMart getapib 等）被浏览器阻止下载的问题，确保远程生成图片能安全拉取并写入本地 IndexedDB，防止临时外链过期导致画布裂图。
-- **资产卡片高度约束**：修复「我的资产」与画布侧栏中长文本资产无限纵向拉伸的问题，超长文本按行截断并可完整查看详情。
-- **移除上游自动同步**：本项目已删除 `.github/workflows/sync-upstream.yml`，不再每小时自动合并上游（此前的自动合并会因 README / i18n 冲突持续失败并刷失败邮件）；需要跟进上游时按需人工合并。
-- **纯净文档与访问统计**：移除上游 README 中插入的第三方 API 赞助推广与返利链接，仅保留访问分析统计代码。
-
 ## 快速开始
 
 AI API Key、Base URL、画布、素材和生成记录默认保存在浏览器本地。
@@ -91,7 +133,7 @@ AI API Key、Base URL、画布、素材和生成记录默认保存在浏览器�
 ### 本地开发
 
 ```bash
-git clone https://github.com/YaoGuaiLi/infinite-canvas.git
+git clone git@github.com:basketikun/infinite-canvas.git
 cd infinite-canvas
 cd web
 bun install
@@ -101,7 +143,7 @@ bun run dev
 ### Docker 运行
 
 ```bash
-git clone https://github.com/YaoGuaiLi/infinite-canvas.git
+git clone git@github.com:basketikun/infinite-canvas.git
 cd infinite-canvas
 docker compose up -d
 ```
@@ -138,6 +180,12 @@ docker compose up -d
 项目定制二次开发需求 / 生图 API 需求可联系。
 
 邮箱：1844025705@qq.com · QQ：1844025705
+
+## 赞助支持
+
+本项目长期开放广告赞助合作，欢迎品牌 / 产品投放，你的支持是持续更新的动力！
+
+有广告赞助意向请通过上方联系方式沟通。
 
 ## 社区支持
 
