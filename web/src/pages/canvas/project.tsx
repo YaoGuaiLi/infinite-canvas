@@ -829,6 +829,14 @@ function InfiniteCanvasPage() {
         setContextMenu,
     });
 
+    // 进入「参考元素选择」模式:插件节点通过 ctx.startReferenceSelection() 触发,交互与内置节点一致
+    const startNodeReferenceSelection = useCallback((nodeId: string) => {
+        setReferencePickerNodeId(nodeId);
+        setSelectedNodeIds(new Set([nodeId]));
+        setSelectedConnectionId(null);
+        setDialogNodeId(null);
+    }, []);
+
     const { pluginHost, renderPluginPanel, buildNodeToolbarItems } = usePluginHost({
         effectiveConfig,
         isAiConfigReady,
@@ -840,6 +848,7 @@ function InfiniteCanvasPage() {
         setNodes,
         setDialogNodeId,
         applyAgentOps,
+        startReferenceSelection: startNodeReferenceSelection,
     });
     const createNode = useCallback(
         (type: CanvasNodeTypeId, position?: Position) => {
@@ -942,13 +951,6 @@ function InfiniteCanvasPage() {
 
     const disconnectNodeReference = useCallback((fromNodeId: string, toNodeId: string) => {
         setConnections((prev) => prev.filter((connection) => connection.fromNodeId !== fromNodeId || connection.toNodeId !== toNodeId));
-    }, []);
-
-    const startNodeReferenceSelection = useCallback((nodeId: string) => {
-        setReferencePickerNodeId(nodeId);
-        setSelectedNodeIds(new Set([nodeId]));
-        setSelectedConnectionId(null);
-        setDialogNodeId(null);
     }, []);
 
     const exitNodeReferenceSelection = useCallback(() => {

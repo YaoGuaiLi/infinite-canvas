@@ -230,6 +230,8 @@ export type CanvasNodeContext = {
     on: (event: string, handler: (payload: unknown) => void) => () => void;
     // AI 生成能力(生图/生视频/生文本),复用宿主模型配置
     ai: CanvasPluginAi;
+    // 进入宿主「参考元素选择」模式:用户随后在画布上点选节点,自动连线作为本节点的输入素材
+    startReferenceSelection: () => void;
     // 打开/关闭本节点下方的自定义 Panel(需在节点定义里提供 Panel)
     openPanel: () => void;
     closePanel: () => void;

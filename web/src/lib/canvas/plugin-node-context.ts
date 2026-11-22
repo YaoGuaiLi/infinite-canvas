@@ -20,6 +20,7 @@ export function buildNodeContext(host: CanvasPluginHost, node: CanvasNodeData, t
         getUpstream: () => host.getUpstream(node.id),
         getDownstream: () => host.getDownstream(node.id),
         applyOps: (ops) => host.applyOps(ops),
+        startReferenceSelection: () => host.startReferenceSelection(node.id),
         emit: (event, payload) => emitCanvasEvent(event, payload),
         on: (event, handler) => onCanvasEvent(event, handler),
         ai: host.ai,
